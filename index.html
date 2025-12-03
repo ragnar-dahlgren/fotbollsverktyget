@@ -500,15 +500,10 @@
             <div class="btn-group">
                 <button class="btn active" id="btn-move" onclick="setMode('move')">Markera</button>
                 <button class="btn" id="btn-path" onclick="setMode('path')">Bana</button>
+                <button class="btn" id="btn-draw-menu" onclick="setMode('draw_menu')">Rita</button>
             </div>
 
-            <div class="tool-section">
-                <div class="section-title">Plan</div>
-                <div class="btn-group">
-                    <button class="btn active" onclick="setFieldType('lines')" id="btn-lines">Linjer</button>
-                    <button class="btn" onclick="setFieldType('plain')" id="btn-plain">Gräs</button>
-                </div>
-            </div>
+
 
             <div class="tool-section" id="section-field">
                 <div class="section-title">Plan</div>
@@ -1466,7 +1461,7 @@
         document.querySelectorAll('.tool-item').forEach(item => {
             item.addEventListener('dragstart', (e) => {
                 // Prevent dragging if in Draw or Eraser mode
-                if (currentMode === 'draw' || currentMode === 'eraser') {
+                if (currentMode === 'draw' || currentMode === 'eraser' || currentMode === 'draw_menu') {
                     e.preventDefault();
                     return;
                 }
@@ -1780,7 +1775,20 @@
                 document.getElementById('section-objects').classList.add('disabled');
                 document.getElementById('section-draw').classList.remove('disabled');
 
+            } else if (mode === 'draw_menu') {
+                document.getElementById('btn-draw-menu').classList.add('active');
+                canvas.style.cursor = 'default';
+
+                // Disable Objects, Enable Draw
+                document.getElementById('section-objects').classList.add('disabled');
+                document.getElementById('section-draw').classList.remove('disabled');
+
+                // Don't set currentMode to 'draw' yet, wait for shape selection
+                // But we need to prevent dragging objects
+                currentMode = 'draw_menu';
+
             } else if (mode === 'draw') {
+                document.getElementById('btn-draw-menu').classList.add('active');
                 canvas.style.cursor = 'crosshair';
 
                 // Disable Objects, Enable Draw
