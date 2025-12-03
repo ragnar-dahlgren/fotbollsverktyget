@@ -1481,10 +1481,17 @@
 
             const coords = getCanvasCoordinates(e);
 
-            const type = e.dataTransfer.getData('type');
-            const color = e.dataTransfer.getData('color');
+            // Use global variables instead of dataTransfer
+            const type = draggedItemType;
+            const color = draggedItemColor;
 
-            addObject(type, color, coords.x, coords.y);
+            if (type) {
+                addObject(type, color, coords.x, coords.y);
+            }
+
+            // Reset
+            draggedItemType = null;
+            draggedItemColor = null;
         });
 
         // Mushantering
