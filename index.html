@@ -458,6 +458,13 @@
         .hidden {
             display: none !important;
         }
+
+        /* Disabled Section Style */
+        .tool-section.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
     </style>
 </head>
 
@@ -503,7 +510,15 @@
                 </div>
             </div>
 
-            <div class="tool-section">
+            <div class="tool-section" id="section-field">
+                <div class="section-title">Plan</div>
+                <div class="btn-group">
+                    <button class="btn active" onclick="setFieldType('lines')" id="btn-lines">Linjer</button>
+                    <button class="btn" onclick="setFieldType('plain')" id="btn-plain">Gräs</button>
+                </div>
+            </div>
+
+            <div class="tool-section" id="section-objects">
                 <div class="section-title">Objekt</div>
                 <div class="tool-grid">
                     <!-- Players -->
@@ -570,7 +585,9 @@
 
             <div class="divider"></div>
 
-            <div class="tool-section">
+            <div class="divider"></div>
+
+            <div class="tool-section" id="section-draw">
                 <div class="section-title">Rita</div>
                 <div class="tool-grid">
                     <div class="tool-item" onclick="setDrawMode('rect')" id="btn-draw-rect">
@@ -884,8 +901,9 @@
             }
 
             zoomLevel = level;
+            zoomLevel = level;
             canvas.style.transform = `scale(${zoomLevel})`;
-            canvas.style.transformOrigin = 'top left';
+            canvas.style.transformOrigin = 'top center';
 
             // Update canvas container size to match zoomed canvas
             const container = document.querySelector('.canvas-container');
@@ -1441,11 +1459,21 @@
             return null;
         }
 
-        // Drag and drop från panel
+        // Drag & Drop Logic
+        let draggedItemType = null;
+        let draggedItemColor = null;
+
         document.querySelectorAll('.tool-item').forEach(item => {
             item.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('type', item.dataset.type);
-                e.dataTransfer.setData('color', item.dataset.color || '');
+                // Prevent dragging if in Draw or Eraser mode
+                if (currentMode === 'draw' || currentMode === 'eraser') {
+                    e.preventDefault();
+                    return;
+                }
+
+                draggedItemType = item.dataset.type;
+                draggedItemColor = item.dataset.color;
+                e.dataTransfer.setData('text/plain', draggedItemType); // Required for Firefox
             });
         });
 
@@ -1726,9 +1754,19 @@
             if (mode === 'move') {
                 document.getElementById('btn-move').classList.add('active');
                 canvas.style.cursor = 'default';
+
+                // Enable Objects, Disable Draw
+                document.getElementById('section-objects').classList.remove('disabled');
+                document.getElementById('section-draw').classList.add('disabled');
+
             } else if (mode === 'path') {
                 document.getElementById('btn-path').classList.add('active');
                 canvas.style.cursor = 'crosshair';
+
+                // Enable Objects, Disable Draw
+                document.getElementById('section-objects').classList.remove('disabled');
+                document.getElementById('section-draw').classList.add('disabled');
+
             } else if (mode === 'eraser') {
                 const eraserBtn = document.getElementById('btn-eraser');
                 if (eraserBtn) {
@@ -1737,8 +1775,17 @@
                     eraserBtn.style.backgroundColor = '#e3f2fd';
                 }
                 canvas.style.cursor = 'not-allowed'; // Visual cue for eraser
+
+                // Disable Objects, Enable Draw (Eraser is in Draw section)
+                document.getElementById('section-objects').classList.add('disabled');
+                document.getElementById('section-draw').classList.remove('disabled');
+
             } else if (mode === 'draw') {
                 canvas.style.cursor = 'crosshair';
+
+                // Disable Objects, Enable Draw
+                document.getElementById('section-objects').classList.add('disabled');
+                document.getElementById('section-draw').classList.remove('disabled');
             }
 
             render();
