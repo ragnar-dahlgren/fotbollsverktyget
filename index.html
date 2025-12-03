@@ -498,7 +498,7 @@
 
             <div class="section-title">Läge</div>
             <div class="btn-group">
-                <button class="btn active" id="btn-move" onclick="setMode('move')">Markera</button>
+                <button class="btn active" id="btn-move" onclick="setMode('move')">Flytta</button>
                 <button class="btn" id="btn-path" onclick="setMode('path')">Bana</button>
                 <button class="btn" id="btn-draw-menu" onclick="setMode('draw_menu')">Rita</button>
             </div>
@@ -1751,7 +1751,9 @@
                 canvas.style.cursor = 'default';
 
                 // Enable Objects, Disable Draw
-                document.getElementById('section-objects').classList.remove('disabled');
+                const objSection = document.getElementById('section-objects');
+                objSection.classList.remove('disabled');
+                objSection.style.pointerEvents = 'auto'; // Force enable
                 document.getElementById('section-draw').classList.add('disabled');
 
             } else if (mode === 'path') {
