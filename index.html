@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fotbollsövnings Animator</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --panel-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --accent-color: #2c3e50;
+            --accent-hover: #34495e;
+            --border-color: #e0e0e0;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --radius: 6px;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        .header {
+            height: 60px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+
+        .header-title-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title {
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--accent-color);
+        }
+
+        .header-subtitle {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 15px;
+            background: var(--bg-color);
+            padding: 6px 10px;
+            border-radius: 20px;
+        }
+
+        .zoom-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 40px;
+        }
+
+        /* MAIN LAYOUT */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR LEFT - TOOLS */
+        .sidebar-left {
+            width: 260px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            padding-bottom: 90px;
+            /* Prevent overlap with console */
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .tool-section {
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .tool-item {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 5px;
+            cursor: grab;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            height: 60px;
+        }
+
+        .tool-item:hover {
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-color: var(--accent-color);
+        }
+
+        .tool-item img,
+        .tool-item svg,
+        .tool-preview {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+            flex-shrink: 0;
+            /* Prevent shrinking */
+        }
+
+        .tool-item span {
+            font-size: 9px;
+            text-align: center;
+            color: var(--text-secondary);
+            line-height: 1.1;
+        }
+
+        /* CANVAS AREA */
+        .canvas-container {
+            flex: 1;
+            background: #333;
+            overflow: auto;
+            position: relative;
+            display: grid;
+            place-items: start center;
+            padding: 20px;
+        }
+
+        #canvas {
+            background: #7cb342;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transform-origin: top center;
+            /* Added for consistent zoom behavior */
+        }
+
+        /* SIDEBAR RIGHT - PROPERTIES */
+        .sidebar-right {
+            width: 280px;
+            background: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+            padding: 10px;
+            padding-bottom: 90px;
+            /* Prevent overlap with console */
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        /* CONTROLS & BUTTONS */
+        .btn {
+            padding: 6px 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            background: var(--panel-bg);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background: var(--bg-color);
+            border-color: #ccc;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-group {
+            display: flex;
+            background: var(--bg-color);
+            padding: 4px;
+            border-radius: var(--radius);
+            gap: 2px;
+            margin-bottom: 12px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 6px;
+            font-size: 12px;
+        }
+
+        .btn-group .btn.active {
+            background: var(--panel-bg);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+        }
+
+        /* DIRECTOR'S CONSOLE (Bottom) */
+        .director-console {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            /* Compact height */
+            background: #ffffff;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            /* Reduced padding */
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .console-left,
+        .console-right {
+            width: 200px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .console-center {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .console-right {
+            justify-content: flex-end;
+        }
+
+        /* Timeline Slider (Top of Console) */
+        .timeline-slider-container {
+            position: absolute;
+            top: -10px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .timeline-slider {
+            width: 100%;
+            height: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            outline: none;
+            margin: 0;
+            display: block;
+        }
+
+        .timeline-slider::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            cursor: pointer;
+        }
+
+        .timeline-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            margin-top: -4px;
+            /* Center on track */
+            transition: transform 0.1s;
+        }
+
+        .timeline-slider:hover::-webkit-slider-thumb {
+            transform: scale(1.2);
+        }
+
+        /* Console Buttons */
+        .console-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            border-radius: 50%;
+        }
+
+        .console-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .console-btn.large {
+            width: 40px;
+            /* Smaller large button */
+            height: 40px;
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .console-btn.large:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        .console-btn.record {
+            color: #e74c3c;
+        }
+
+        .console-btn.record.active {
+            animation: pulse 2s infinite;
+        }
+
+        .console-btn.mic.active {
+            color: var(--accent-color);
+            background: rgba(44, 62, 80, 0.1);
+        }
+
+        .console-btn.mic.inactive {
+            color: #999;
+            text-decoration: line-through;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+            }
+
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+            }
+        }
+
+        .time-display {
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        /* FORM ELEMENTS COMPACT */
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-select,
+        .form-input {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 12px;
+            background-color: #fff;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* UTILS */
+        .divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 20px 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-title-container">
+            <div class="header-title">Fotbollsverktyg Lerum IS P18 Vit</div>
+            <div class="header-subtitle">Utvecklad av <a href="mailto:ragnar.dahlgren@gmail.com"
+                    style="color: inherit; text-decoration: none;">ragnar.dahlgren@gmail.com</a></div>
+        </div>
+        <div class="header-controls">
+            <div class="zoom-control">
+                <span style="font-size: 12px;">🔍</span>
+                <input type="range" id="zoomSlider" min="0.5" max="2.0" step="0.1" value="1.0"
+                    oninput="updateZoom('slider')" style="width: 80px;">
+                <input type="number" id="zoomInput" value="100" min="50" max="200" step="10"
+                    onchange="updateZoom('input')"
+                    style="width: 50px; padding: 2px; font-size: 11px; border: 1px solid #ccc; border-radius: 4px; text-align: center;">
+                <span style="font-size: 11px;">%</span>
+            </div>
+            <button class="btn" onclick="exportImage()">Spara Bild</button>
+            <button class="btn" onclick="saveVideo()" id="saveVideoBtn" disabled>Spara Video</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- LEFT SIDEBAR: TOOLS -->
+        <div class="sidebar-left">
+
+
+            <div class="section-title">Läge</div>
+            <div class="btn-group">
+                <button class="btn active" id="btn-move" onclick="setMode('move')">Markera</button>
+                <button class="btn" id="btn-path" onclick="setMode('path')">Bana</button>
+            </div>
+
+            <div class="tool-section">
+                <div class="section-title">Plan</div>
+                <div class="btn-group">
+                    <button class="btn active" onclick="setFieldType('lines')" id="btn-lines">Linjer</button>
+                    <button class="btn" onclick="setFieldType('plain')" id="btn-plain">Gräs</button>
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <div class="section-title">Objekt</div>
+                <div class="tool-grid">
+                    <!-- Players -->
+                    <div class="tool-item" draggable="true" data-type="player" data-color="#402A5B">
+                        <div class="tool-preview" style="background: #402A5B; border-radius: 50%;"></div>
+                        <span class="tool-label">Spelare</span>
+                    </div>
+                    <div class="tool-item" draggable="true" data-type="player" data-color="#C39956">
+                        <div class="tool-preview" style="background: #C39956; border-radius: 50%;"></div>
+                        <span class="tool-label">Spelare</span>
+                    </div>
+                    <div class="tool-item" draggable="true" data-type="player" data-color="#FFFFFF">
+                        <div class="tool-preview"
+                            style="background: #FFFFFF; border: 1px solid #ccc; border-radius: 50%;"></div>
+                        <span class="tool-label">Spelare</span>
+                    </div>
+                    <div class="tool-item" draggable="true" data-type="player" data-color="#000000">
+                        <div class="tool-preview" style="background: #000000; border-radius: 50%;"></div>
+                        <span class="tool-label">Spelare</span>
+                    </div>
+                    <div class="tool-item" draggable="true" data-type="player" data-color="#9b59b6">
+                        <div class="tool-preview" style="background: #9b59b6; border-radius: 50%;"></div>
+                        <span class="tool-label">Spelare</span>
+                    </div>
+                    <div class="tool-item" draggable="true" data-type="player" data-color="#1e8449">
+                        <div class="tool-preview" style="background: #1e8449; border-radius: 50%;"></div>
+                        <span class="tool-label">Spelare</span>
+                    </div>
+                    <div class="tool-item" draggable="true" data-type="player" data-color="#e74c3c">
+                        <div class="tool-preview" style="background: #e74c3c; border-radius: 50%;"></div>
+                        <span class="tool-label">Spelare</span>
+                    </div>
+                    <div class="tool-item" draggable="true" data-type="player" data-color="#3498db">
+                        <div class="tool-preview" style="background: #3498db; border-radius: 50%;"></div>
+                        <span class="tool-label">Spelare</span>
+                    </div>
+                    <!-- Ball -->
+                    <div class="tool-item" draggable="true" data-type="ball">
+                        <div class="tool-preview"
+                            style="background: radial-gradient(circle at 30% 30%, #fff, #eee); border-radius: 50%; border: 1px solid #ccc;">
+                        </div>
+                        <span class="tool-label">Boll</span>
+                    </div>
+                    <!-- Cones -->
+                    <div class="tool-item" draggable="true" data-type="cone" data-color="orange">
+                        <div class="tool-preview"
+                            style="background: orange; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); border-radius: 0;">
+                        </div>
+                        <span class="tool-label">Kon</span>
+                    </div>
+                    <!-- Goal -->
+                    <div class="tool-item" draggable="true" data-type="goal">
+                        <div class="tool-preview"
+                            style="border: 2px solid #333; background: transparent; border-radius: 2px;"></div>
+                        <span class="tool-label">Mål</span>
+                    </div>
+                    <!-- Coach -->
+                    <div class="tool-item" draggable="true" data-type="coach">
+                        <div class="tool-preview" style="background: #34495e; border-radius: 50%;"></div>
+                        <span class="tool-label">Tränare</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="tool-section">
+                <div class="section-title">Rita</div>
+                <div class="tool-grid">
+                    <div class="tool-item" onclick="setDrawMode('rect')" id="btn-draw-rect">
+                        <svg viewBox="0 0 24 24" fill="#555" stroke="none">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                        </svg>
+                        <span>Ruta</span>
+                    </div>
+                    <div class="tool-item" onclick="setDrawMode('circle')" id="btn-draw-circle">
+                        <svg viewBox="0 0 24 24" fill="#555" stroke="none">
+                            <circle cx="12" cy="12" r="10" />
+                        </svg>
+                        <span>Cirkel</span>
+                    </div>
+                    <div class="tool-item" onclick="setDrawMode('triangle')" id="btn-draw-triangle">
+                        <svg viewBox="0 0 24 24" fill="#555" stroke="none">
+                            <path d="M12 2 L22 22 L2 22 Z" />
+                        </svg>
+                        <span>Triangel</span>
+                    </div>
+                    <div class="tool-item" onclick="setDrawMode('line')" id="btn-draw-line">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="3">
+                            <line x1="2" y1="22" x2="22" y2="2" />
+                        </svg>
+                        <span>Linje</span>
+                    </div>
+                    <div class="tool-item" onclick="setDrawMode('arrow')" id="btn-draw-arrow">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="3">
+                            <line x1="2" y1="12" x2="22" y2="12" />
+                            <polyline points="16 6 22 12 16 18" fill="#555" stroke="none" />
+                        </svg>
+                        <span>Pil</span>
+                    </div>
+                    <div class="tool-item" onclick="setMode('eraser')" id="btn-eraser">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2">
+                            <path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z" />
+                            <line x1="17" y1="17" x2="11" y2="11" />
+                        </svg>
+                        <span>Sudd</span>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- CENTER: CANVAS -->
+        <div class="canvas-container">
+            <canvas id="canvas" width="600" height="900"></canvas>
+        </div>
+
+        <!-- RIGHT SIDEBAR: SETTINGS -->
+        <div class="sidebar-right">
+            <div class="tool-section">
+                <div class="section-title">Verktyg</div>
+                <div class="form-group">
+                    <button class="btn" onclick="deselectAll()" style="width: 100%; margin-bottom: 8px;">Avmarkera
+                        allt</button>
+                    <button class="btn" onclick="resetToStart()" style="width: 100%; margin-bottom: 8px;">Återställ
+                        positioner</button>
+                    <button class="btn" onclick="clearCanvas()"
+                        style="width: 100%; color: var(--danger-color); border-color: var(--danger-color);">Rensa
+                        allt</button>
+                </div>
+
+                <div class="form-group" id="rotationControl"
+                    style="display: none; border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+                    <label class="form-label">Redigera</label>
+                    <button class="btn" onclick="rotateSelected()" style="width: 100%; margin-bottom: 8px;">Rotera
+                        90°</button>
+                    <button class="btn" onclick="deleteSelected()"
+                        style="width: 100%; color: var(--danger-color); border-color: var(--danger-color);">Ta bort
+                        markerad</button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="tool-section">
+                <div class="section-title">Inställningar</div>
+
+                <div class="form-group">
+                    <label class="form-label">Banvisning</label>
+                    <select id="pathVisibilitySelect" class="form-select" onchange="togglePathVisibility()">
+                        <option value="visible_points">Visa bana med punkter</option>
+                        <option value="visible_no_points">Visa bana utan punkter</option>
+                        <option value="hidden">Dölj bana</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Bantyp</label>
+                    <select id="pathTypeSelect" class="form-select" onchange="changePathType()">
+                        <option value="straight" selected>Rak linje</option>
+                        <option value="curved">Böjd linje</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Linjestil</label>
+                    <select id="pathStyleSelect" class="form-select" onchange="changePathStyle()">
+                        <option value="dashed">Streckad linje</option>
+                        <option value="dotted">Prickad linje</option>
+                        <option value="solid">Heldragen linje</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Linjetjocklek</label>
+                    <select id="pathWidthSelect" class="form-select" onchange="changePathWidth()">
+                        <option value="2">Tunn</option>
+                        <option value="4">Normal</option>
+                        <option value="6">Tjock</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="keepFormationCheckbox" onchange="toggleKeepFormation()"> Behåll
+                        formation vid flytt
+                    </label>
+                </div>
+
+                <div class="form-group" style="margin-top: 10px;">
+                    <button class="btn" onclick="clearSelectedPath()" style="width: 100%;" id="clearPathBtn"
+                        disabled>Rensa
+                        bana för vald</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Uppspelningshastighet</label>
+                    <input type="range" id="speedSlider" min="0.5" max="3" step="0.1" value="1" oninput="updateSpeed()"
+                        style="width: 100%;">
+                    <div style="text-align: right; font-size: 11px; color: var(--text-secondary); margin-top: 4px;"
+                        id="speedValue">1.0x</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.5;">
+                <strong>Kortkommandon:</strong><br>
+                Ctrl + Klick: Välj flera<br>
+                Delete: Ta bort valda<br>
+                Högerklick på bana: Ta bort punkt
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- DIRECTOR'S CONSOLE -->
+    <div class="director-console">
+        <!-- Timeline Slider (Top Edge) -->
+        <div class="timeline-slider-container">
+            <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="0"
+                oninput="seekTimeline(event)">
+        </div>
+
+        <!-- Left: Time -->
+        <div class="console-left">
+            <div class="time-display" id="timelineTime">00:00</div>
+        </div>
+
+        <!-- Center: Controls -->
+        <div class="console-center">
+            <!-- Rewind -->
+            <button class="console-btn" onclick="resetAnimation()" title="Spola tillbaka">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 19 2 12 11 5 11 19"></polygon>
+                    <polygon points="22 19 13 12 22 5 22 19"></polygon>
+                </svg>
+            </button>
+
+            <!-- Play/Pause -->
+            <button class="console-btn large" onclick="playAnimation()" id="playBtn" title="Spela/Pausa" disabled>
+                <svg id="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <svg id="pauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"
+                    style="display:none;">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+            </button>
+
+            <!-- Record -->
+            <button class="console-btn record" onclick="toggleRecording()" id="recordBtn" title="Spela in">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <circle cx="12" cy="12" r="10"></circle>
+                </svg>
+            </button>
+
+            <!-- Mic -->
+            <button class="console-btn mic inactive" onclick="toggleMic()" id="micBtn" title="Mikrofon Av/På">
+                <svg id="micOnIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                <svg id="micOffIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                    <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                    <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Right: Speed -->
+        <div class="console-right">
+            <div style="display: flex; flex-direction: column; align-items: flex-end; width: 100px;">
+                <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 2px;">Hastighet: <span
+                        id="speedValue">1.0x</span></div>
+                <input type="range" id="speedSlider" min="0.5" max="3" step="0.1" value="1" oninput="updateSpeed()"
+                    style="width: 100%;">
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/h264-mp4-encoder/1.0.11/h264-mp4-encoder.web.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let objects = [];
+        let selectedObjects = []; // Nu kan flera väljas
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let currentMode = 'move'; // move, path, draw, eraser
+        let currentDrawMode = null; // rect, circle, triangle, line, arrow
+        let isDrawing = false;
+
+        // ... (existing code) ...
+
+        function setMode(mode) {
+            currentMode = mode;
+
+            // Update UI
+            document.querySelectorAll('.sidebar-left .btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tool-item').forEach(item => item.classList.remove('active'));
+
+            if (mode === 'move') document.getElementById('btn-move').classList.add('active');
+            if (mode === 'path') document.getElementById('btn-path').classList.add('active');
+            if (mode === 'eraser') document.getElementById('btn-eraser').classList.add('active');
+
+            render();
+        }
+
+        function deselectAll() {
+            selectedObjects = [];
+            render();
+        }
+
+        function setDrawMode(shape) {
+            setMode('draw');
+            currentDrawMode = shape;
+
+            // Highlight selected tool
+            document.querySelectorAll('.tool-item').forEach(item => item.classList.remove('active'));
+            document.getElementById('btn-draw-' + shape).classList.add('active');
+
+            // Update drawing properties
+            currentShapeColor = '#333333';
+            currentShapePathStyle = currentPathStyle;
+            currentShapePathWidth = currentPathWidth;
+        }
+        let currentDrawingObject = null;
+        let fieldType = 'lines'; // lines, plain
+        let pathVisibilityMode = 'visible_points'; // visible_points, visible_no_points, hidden
+        let keepFormation = false;
+        let pathType = 'straight'; // curved, straight
+        let currentPathStyle = 'dashed'; // dashed, dotted, solid
+        let currentPathWidth = 2; // Default width
+        let animationDuration = 0;
+        let isPlaying = false;
+        let animationTime = 0;
+        let lastTimestamp = 0;
+        let playbackSpeed = 1;
+        let zoomLevel = 1.0; // Changed from currentZoom to zoomLevel
+
+        // Recording state
+        let isRecording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let audioStream = null;
+        let isMicActive = false;
+        let recordedBlob = null;
+
+        // Uppspelning
+        let playbackStartTime = 0;
+
+        // Zoom
+        function updateZoom(source) {
+            let level;
+            const slider = document.getElementById('zoomSlider');
+            const input = document.getElementById('zoomInput');
+
+            if (source === 'slider') {
+                level = parseFloat(slider.value);
+                input.value = Math.round(level * 100);
+            } else {
+                level = parseInt(input.value) / 100;
+                if (isNaN(level)) level = 1.0;
+                level = Math.max(0.5, Math.min(2.0, level)); // Clamp
+                slider.value = level;
+            }
+
+            zoomLevel = level;
+            canvas.style.transform = `scale(${zoomLevel})`;
+            canvas.style.transformOrigin = 'top left';
+
+            // Update canvas container size to match zoomed canvas
+            const container = document.querySelector('.canvas-container');
+            // container.style.width = (600 * zoomLevel) + 'px'; // Optional: adjust container
+            // container.style.height = (900 * zoomLevel) + 'px';
+        }
+
+        // Hjälpfunktion för koordinater
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            // rect är den visuella storleken (inklusive zoom)
+            // Vi måste kompensera för zoom när vi räknar ut positionen
+
+            const clientX = e.clientX;
+            const clientY = e.clientY;
+
+            // Position relativt canvas övre vänstra hörn (visuellt)
+            const visualX = clientX - rect.left;
+            const visualY = clientY - rect.top;
+
+            // Skala tillbaka till intern canvas-storlek
+            // Eftersom rect redan är skalad av transform.
+            // Om vi har scale(0.5), är rect hälften så stor.
+            // En pixel i rect motsvarar 2 pixlar i canvas.
+            // Så vi ska dividera med zoom-faktorn.
+
+            return {
+                x: visualX / zoomLevel, // Use zoomLevel here
+                y: visualY / zoomLevel
+            };
+        }
+
+        // Hjälpfunktion för att göra färger mörkare/ljusare
+        function shadeColor(color, percent) {
+            let R = parseInt(color.substring(1, 3), 16);
+            let G = parseInt(color.substring(3, 5), 16);
+            let B = parseInt(color.substring(5, 7), 16);
+
+            R = parseInt(R * (100 + percent) / 100);
+            G = parseInt(G * (100 + percent) / 100);
+            B = parseInt(B * (100 + percent) / 100);
+
+            R = (R < 255) ? R : 255;
+            G = (G < 255) ? G : 255;
+            B = (B < 255) ? B : 255;
+
+            const RR = ((R.toString(16).length == 1) ? "0" + R.toString(16) : R.toString(16));
+            const GG = ((G.toString(16).length == 1) ? "0" + G.toString(16) : G.toString(16));
+            const BB = ((B.toString(16).length == 1) ? "0" + B.toString(16) : B.toString(16));
+
+            return "#" + RR + GG + BB;
+        }
+
+        // Rita fotbollsplan (stående format)
+        function drawField() {
+            ctx.fillStyle = '#7cb342';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (fieldType === 'lines') {
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+
+                // Yttre linjer
+                ctx.strokeRect(50, 50, 500, 800);
+
+                // Mittlinje
+                ctx.beginPath();
+                ctx.moveTo(50, 450);
+                ctx.lineTo(550, 450);
+                ctx.stroke();
+
+                // Mittelcirkel
+                ctx.beginPath();
+                ctx.arc(300, 450, 60, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Mittenpunkt
+                ctx.beginPath();
+                ctx.arc(300, 450, 3, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+
+                // Övre straffområde
+                ctx.strokeRect(175, 50, 250, 120);
+                ctx.strokeRect(225, 50, 150, 50);
+
+                // Nedre straffområde
+                ctx.strokeRect(175, 730, 250, 120);
+                ctx.strokeRect(225, 800, 150, 50);
+
+                // Övre mål
+                ctx.strokeRect(250, 20, 100, 30);
+
+                // Nedre mål
+                ctx.strokeRect(250, 850, 100, 30);
+            }
+        }
+
+        // Rita bana
+        function drawPath(obj) {
+            if (pathVisibilityMode === 'hidden') return;
+            if (!obj.path || obj.path.length === 0) return;
+
+            ctx.beginPath();
+            ctx.moveTo(obj.startX, obj.startY);
+
+            ctx.strokeStyle = obj.color || 'rgba(0, 0, 0, 0.3)';
+            ctx.lineWidth = currentPathWidth;
+            ctx.setLineDash([]);
+            if (currentPathStyle === 'dashed') {
+                ctx.setLineDash([10, 10]);
+            } else if (currentPathStyle === 'dotted') {
+                ctx.setLineDash([3, 5]);
+            }
+
+            if (pathType === 'straight') {
+                obj.path.forEach(point => {
+                    ctx.lineTo(point.x, point.y);
+                });
+            } else {
+                // Catmull-Rom Splines för mjukare, naturligare kurvor
+                // Skapa fullständig bana inklusive startpunkt
+                const points = [{ x: obj.startX, y: obj.startY }, ...obj.path];
+
+                if (points.length < 2) {
+                    // Inget att rita
+                } else if (points.length === 2) {
+                    // Bara en linje
+                    ctx.lineTo(points[1].x, points[1].y);
+                } else {
+                    // Catmull-Rom implementation
+                    // Vi ritar segment mellan p1 och p2
+                    // p0 och p3 används för att beräkna tangenterna
+
+                    const tension = 0.5; // Justera för mer/mindre kurvatur (0.5 är standard)
+
+                    // Move to the first point
+                    ctx.moveTo(points[0].x, points[0].y);
+
+                    for (let i = 0; i < points.length - 1; i++) {
+                        const p0 = points[Math.max(i - 1, 0)];
+                        const p1 = points[i];
+                        const p2 = points[i + 1];
+                        const p3 = points[Math.min(i + 2, points.length - 1)];
+
+                        // Rita segmentet med små steg
+                        const steps = 20;
+                        for (let t = 0; t <= steps; t++) { // Start from t=0 for the first point
+                            const st = t / steps;
+                            const st2 = st * st;
+                            const st3 = st2 * st;
+
+                            // Catmull-Rom formel
+                            const x = 0.5 * (
+                                (2 * p1.x) +
+                                (-p0.x + p2.x) * st +
+                                (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * st2 +
+                                (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * st3
+                            );
+
+                            const y = 0.5 * (
+                                (2 * p1.y) +
+                                (-p0.y + p2.y) * st +
+                                (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * st2 +
+                                (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * st3
+                            );
+
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                }
+            }
+            ctx.strokeStyle = obj.color || 'rgba(0, 0, 0, 0.3)'; // Use obj.color for path stroke
+            ctx.stroke();
+            ctx.setLineDash([]); // Återställ
+
+            // Rita punkter om valt
+            if (pathVisibilityMode === 'visible_points') {
+                obj.path.forEach((point, index) => {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fill();
+
+                    // Rita nummer
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText((index + 1).toString(), point.x, point.y);
+                });
+            }
+        }
+
+        // SVG Paths
+        const SVG_PATHS = {
+            // En tydlig tröjform (T-shirt)
+            player: "M12,2 C10,2 9,3 8,3 L6,3 L6,6 L2,6 L2,10 L6,10 L6,20 L18,20 L18,10 L22,10 L22,6 L18,6 L18,3 L16,3 C15,3 14,2 12,2 Z"
+        };
+
+        // Cacha SVG-bilder
+        const playerImages = {};
+
+        function getPlayerImage(color, isCoach = false) {
+            const cacheKey = color + (isCoach ? '_coach' : '');
+            if (playerImages[cacheKey]) return playerImages[cacheKey];
+
+            const skinColor = "#f0d5b9";
+            const shortsColor = isCoach ? "#000000" : "#ffffff"; // Svarta shorts för tränare, vita för spelare
+            const hairColor = "#8d5524"; // Brunt hår
+            const eyeColor = "#63a4ff"; // Blå ögon
+            const kitColor = isCoach ? "#000000" : color; // Svart tröja/strumpor för tränare
+
+            // Detaljerad spelare: Huvud, Hår, Ansikte, Tröja, Shorts, Strumpor, Skor
+            const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <!-- Head -->
+                <circle cx="12" cy="4" r="2.5" fill="${skinColor}" />
+                
+                <!-- Hair -->
+                <path d="M9.5,2 C10.5,1.5 13.5,1.5 14.5,2 C15.5,2.5 15,4 15,4 C15,4 14,3 12,3 C10,3 9,4 9,4 C9,4 8.5,2.5 9.5,2 Z" fill="${hairColor}" />
+                
+                <!-- Eyes -->
+                <circle cx="11.2" cy="3.8" r="0.4" fill="${eyeColor}" />
+                <circle cx="12.8" cy="3.8" r="0.4" fill="${eyeColor}" />
+                
+                <!-- Mouth -->
+                <path d="M11.5,5 Q12,5.3 12.5,5" stroke="#8a6c50" stroke-width="0.3" fill="none" />
+                
+                <!-- Jersey -->
+                <path d="M8,7 L16,7 L16,9 L18,9 L18,11 L16,11 L16,15 L8,15 L8,11 L6,11 L6,9 L8,9 Z" fill="${kitColor}" />
+                
+                <!-- Shorts -->
+                <path d="M8,15 L16,15 L16,18 L12.5,18 L12.5,16 L11.5,16 L11.5,18 L8,18 Z" fill="${shortsColor}" />
+                
+                <!-- Socks -->
+                <path d="M8.5,18 L11,18 L11,22 L8.5,22 Z" fill="${kitColor}" />
+                <path d="M13,18 L15.5,18 L15.5,22 L13,22 Z" fill="${kitColor}" />
+                
+                <!-- Shoes -->
+                <path d="M8,22 L11,22 L11,23 L8,23 Z" fill="#000" />
+                <path d="M13,22 L16,22 L16,23 L13,23 Z" fill="#000" />
+            </svg>`;
+
+            const img = new Image();
+            img.src = 'data:image/svg+xml;base64,' + btoa(svgString);
+            playerImages[cacheKey] = img;
+            return img;
+        }
+
+        // Rita objekt
+        function drawObject(obj, hideSelection = false) {
+            ctx.save();
+
+            // Apply rotation if exists
+            if (obj.rotation) {
+                ctx.translate(obj.x, obj.y);
+                ctx.rotate(obj.rotation * Math.PI / 180);
+                ctx.translate(-obj.x, -obj.y);
+            }
+
+            // Rita bana först (under objektet)
+            if (obj.path && obj.path.length > 0) {
+                drawPath(obj);
+            }
+
+            if (!hideSelection && selectedObjects.includes(obj)) {
+                ctx.strokeStyle = '#ffd93d';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(obj.x - obj.size / 2 - 5, obj.y - obj.size / 2 - 5, obj.size + 10, obj.size + 10);
+            }
+
+            if (obj.type === 'player') {
+                // Använd SVG för spelare
+                const img = getPlayerImage(obj.color);
+                if (img.complete) {
+                    ctx.drawImage(img, obj.x - obj.size / 2, obj.y - obj.size / 2, obj.size, obj.size);
+                } else {
+                    // Fallback om bilden inte laddat än
+                    img.onload = () => render();
+
+                    // Rita cirkel under tiden
+                    ctx.beginPath();
+                    ctx.arc(obj.x, obj.y, obj.size / 2, 0, Math.PI * 2);
+                    ctx.fillStyle = obj.color;
+                    ctx.fill();
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            } else if (obj.type === 'ball') {
+                // Helt vit boll med lätt skuggning
+                const gradient = ctx.createRadialGradient(obj.x - 3, obj.y - 3, 1, obj.x, obj.y, obj.size / 2);
+                gradient.addColorStop(0, '#ffffff');
+                gradient.addColorStop(0.7, '#ffffff');
+                gradient.addColorStop(1, '#e8e8e8');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(obj.x, obj.y, obj.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Kontur
+                ctx.strokeStyle = '#ccc';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            } else {
+                switch (obj.type) {
+                    case 'cone':
+                        ctx.fillStyle = obj.color;
+                        ctx.beginPath();
+                        ctx.moveTo(obj.x, obj.y - obj.size / 2);
+                        ctx.lineTo(obj.x - obj.size / 2, obj.y + obj.size / 2);
+                        ctx.lineTo(obj.x + obj.size / 2, obj.y + obj.size / 2);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.strokeStyle = '#333';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        break;
+
+                    case 'coach':
+                        // Använd SVG för tränare (helsvart)
+                        const coachImg = getPlayerImage('#000000', true);
+                        if (coachImg.complete) {
+                            ctx.drawImage(coachImg, obj.x - obj.size / 2, obj.y - obj.size / 2, obj.size, obj.size);
+                        } else {
+                            coachImg.onload = () => render();
+                            // Fallback
+                            ctx.fillStyle = '#000';
+                            ctx.beginPath();
+                            ctx.arc(obj.x, obj.y, obj.size / 2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+
+                        // T för tränare (valfritt, kanske inte behövs om han ser ut som en spelare)
+                        /*
+                        ctx.fillStyle = 'white';
+                        ctx.font = 'bold 12px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('T', obj.x, obj.y + 12);
+                        */
+                        break;
+
+                    case 'goal':
+                        ctx.strokeStyle = '#333';
+                        ctx.lineWidth = 3;
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        // Make goal taller (longer) but keep width
+                        // Original: x-30, y-40, w60, h80
+                        // New: x-30, y-60, w60, h120
+                        ctx.fillRect(obj.x - 30, obj.y - 60, 60, 120);
+                        ctx.strokeRect(obj.x - 30, obj.y - 60, 60, 120);
+
+                        // Nät
+                        ctx.strokeStyle = '#666';
+                        ctx.lineWidth = 1;
+                        for (let i = -30; i < 30; i += 10) {
+                            ctx.beginPath();
+                            ctx.moveTo(obj.x + i, obj.y - 60);
+                            ctx.lineTo(obj.x + i, obj.y + 60);
+                            ctx.stroke();
+                        }
+                        for (let i = -60; i < 60; i += 10) {
+                            ctx.beginPath();
+                            ctx.moveTo(obj.x - 30, obj.y + i);
+                            ctx.lineTo(obj.x + 30, obj.y + i);
+                            ctx.stroke();
+                        }
+                        break;
+
+                    // NEW SHAPES
+                    case 'rect':
+                        ctx.strokeStyle = obj.color || '#333';
+                        ctx.lineWidth = 2;
+                        setLineStyle(ctx); // Use current path style
+                        ctx.strokeRect(obj.x, obj.y, obj.width, obj.height);
+                        ctx.setLineDash([]); // Reset
+                        break;
+
+                    case 'circle':
+                        ctx.strokeStyle = obj.color || '#333';
+                        ctx.lineWidth = 2;
+                        setLineStyle(ctx);
+                        ctx.beginPath();
+                        // Radius is half of width/height (approx)
+                        let r = Math.abs(obj.width) / 2;
+                        ctx.arc(obj.x + obj.width / 2, obj.y + obj.height / 2, r, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        break;
+
+                    case 'triangle':
+                        ctx.strokeStyle = obj.color || '#333';
+                        ctx.lineWidth = 2;
+                        setLineStyle(ctx);
+                        ctx.beginPath();
+                        ctx.moveTo(obj.x + obj.width / 2, obj.y); // Top center
+                        ctx.lineTo(obj.x, obj.y + obj.height); // Bottom left
+                        ctx.lineTo(obj.x + obj.width, obj.y + obj.height); // Bottom right
+                        ctx.closePath();
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        break;
+
+                    case 'line':
+                        ctx.strokeStyle = obj.color || '#333';
+                        ctx.lineWidth = 2;
+                        setLineStyle(ctx);
+                        ctx.beginPath();
+                        ctx.moveTo(obj.x, obj.y);
+                        ctx.lineTo(obj.endX, obj.endY);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        break;
+
+                    case 'arrow':
+                        ctx.strokeStyle = obj.color || '#333';
+                        ctx.fillStyle = obj.color || '#333';
+                        ctx.lineWidth = 2;
+                        setLineStyle(ctx);
+
+                        // Line
+                        ctx.beginPath();
+                        ctx.moveTo(obj.x, obj.y);
+                        ctx.lineTo(obj.endX, obj.endY);
+                        ctx.stroke();
+
+                        // Arrowhead
+                        const angle = Math.atan2(obj.endY - obj.y, obj.endX - obj.x);
+                        const headLen = 15;
+                        ctx.beginPath();
+                        ctx.moveTo(obj.endX, obj.endY);
+                        ctx.lineTo(obj.endX - headLen * Math.cos(angle - Math.PI / 6), obj.endY - headLen * Math.sin(angle - Math.PI / 6));
+                        ctx.lineTo(obj.endX - headLen * Math.cos(angle + Math.PI / 6), obj.endY - headLen * Math.sin(angle + Math.PI / 6));
+                        ctx.closePath();
+                        ctx.fill();
+
+                        ctx.setLineDash([]);
+                        break;
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function setLineStyle(ctx) {
+            if (currentPathStyle === 'dashed') {
+                ctx.setLineDash([10, 5]);
+            } else if (currentPathStyle === 'dotted') {
+                ctx.setLineDash([2, 4]);
+            } else {
+                ctx.setLineDash([]);
+            }
+        }
+
+        // Rita allt
+        function render(hideSelection = false) {
+            drawField();
+
+            // Pass 1: Draw shapes (background layer)
+            objects.forEach(obj => {
+                if (['rect', 'circle', 'triangle', 'line', 'arrow'].includes(obj.type)) {
+                    drawObject(obj, hideSelection);
+                }
+            });
+
+            // Pass 2: Draw entities (foreground layer)
+            objects.forEach(obj => {
+                if (!['rect', 'circle', 'triangle', 'line', 'arrow'].includes(obj.type)) {
+                    drawObject(obj, hideSelection);
+                }
+            });
+
+            // Draw temp object being dragged
+            if (isDrawing && currentDrawingObject) {
+                drawObject(currentDrawingObject, true);
+            }
+        }
+
+        // Lägg till objekt
+        function addObject(type, color, x, y) {
+            const sizes = {
+                cone: 14,
+                ball: 16,
+                player: 40,
+                coach: 44,
+                goal: 80
+            };
+
+            const obj = {
+                id: Date.now() + Math.random(),
+                type: type,
+                color: color,
+                x: x,
+                y: y,
+                size: sizes[type] || 20,
+                path: [],
+                startX: x,
+                startY: y,
+                rotation: 0
+            };
+
+            objects.push(obj);
+            render();
+        }
+
+        // Hitta objekt vid position
+        function getObjectAt(x, y) {
+            // Pass 1: Check for entities (players, balls, etc.) - Priority!
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                if (!['rect', 'circle', 'triangle', 'line', 'arrow'].includes(obj.type)) {
+                    const halfSize = obj.size / 2;
+                    if (x >= obj.x - halfSize && x <= obj.x + halfSize &&
+                        y >= obj.y - halfSize && y <= obj.y + halfSize) {
+                        return obj;
+                    }
+                }
+            }
+
+            // Pass 2: Check for shapes (background)
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                if (['rect', 'circle', 'triangle', 'line', 'arrow'].includes(obj.type)) {
+                    // Simple bounding box check for shapes
+                    if (x >= obj.x && x <= obj.x + obj.width && y >= obj.y && y <= obj.y + obj.height) {
+                        return obj;
+                    }
+                    // For lines/arrows, simple proximity check
+                    if (obj.type === 'line' || obj.type === 'arrow') {
+                        if (x >= Math.min(obj.x, obj.endX) - 10 && x <= Math.max(obj.x, obj.endX) + 10 &&
+                            y >= Math.min(obj.y, obj.endY) - 10 && y <= Math.max(obj.y, obj.endY) + 10) {
+                            return obj;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        // Hitta banpunkt vid position
+        function getPathPointAt(obj, x, y) {
+            if (!obj.path) return null;
+
+            for (let i = 0; i < obj.path.length; i++) {
+                const point = obj.path[i];
+                const dist = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+                if (dist < 10) {
+                    return i;
+                }
+            }
+            return null;
+        }
+
+        // Drag and drop från panel
+        document.querySelectorAll('.tool-item').forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('type', item.dataset.type);
+                e.dataTransfer.setData('color', item.dataset.color || '');
+            });
+        });
+
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+
+            const coords = getCanvasCoordinates(e);
+
+            const type = e.dataTransfer.getData('type');
+            const color = e.dataTransfer.getData('color');
+
+            addObject(type, color, coords.x, coords.y);
+        });
+
+        // Mushantering
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+
+            const coords = getCanvasCoordinates(e);
+            const x = coords.x;
+            const y = coords.y;
+
+            if (currentMode === 'move') {
+                const obj = getObjectAt(x, y);
+                if (obj) {
+                    if (e.ctrlKey || e.metaKey) {
+                        // Ctrl-klick: lägg till/ta bort från urval
+                        const index = selectedObjects.indexOf(obj);
+                        if (index > -1) {
+                            selectedObjects.splice(index, 1);
+                        } else {
+                            selectedObjects.push(obj);
+                        }
+                    } else {
+                        // Vanlig klick: välj bara detta objekt
+                        if (!selectedObjects.includes(obj)) {
+                            selectedObjects = [obj];
+                        }
+                        isDragging = true;
+                        dragStartX = x - obj.x;
+                        dragStartY = y - obj.y;
+                    }
+                } else if (!e.ctrlKey && !e.metaKey) {
+                    selectedObjects = [];
+                }
+            } else if (currentMode === 'eraser') {
+                // Check for objects (players, balls, etc.)
+                let obj = getObjectAt(x, y);
+
+                // If no object found, check for drawn shapes
+                if (!obj) {
+                    // Iterate in reverse to find top-most shape
+                    for (let i = objects.length - 1; i >= 0; i--) {
+                        const o = objects[i];
+                        if (['rect', 'circle', 'triangle', 'line', 'arrow'].includes(o.type)) {
+                            // Simple bounding box check for shapes for now
+                            // Ideally we'd have precise hit detection per shape
+                            if (x >= o.x && x <= o.x + o.width && y >= o.y && y <= o.y + o.height) {
+                                obj = o;
+                                break;
+                            }
+                            // For lines/arrows, we might need better hit detection
+                            if (o.type === 'line' || o.type === 'arrow') {
+                                // Simple proximity check to line segment
+                                // ... (omitted for brevity, using bounding box for now)
+                                if (x >= Math.min(o.x, o.endX) - 10 && x <= Math.max(o.x, o.endX) + 10 &&
+                                    y >= Math.min(o.y, o.endY) - 10 && y <= Math.max(o.y, o.endY) + 10) {
+                                    obj = o;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (obj) {
+                    // Remove object
+                    const index = objects.indexOf(obj);
+                    if (index > -1) {
+                        objects.splice(index, 1);
+                        // Also remove from selection if present
+                        const selIndex = selectedObjects.indexOf(obj);
+                        if (selIndex > -1) {
+                            selectedObjects.splice(selIndex, 1);
+                        }
+                        render(); // Force render
+                    }
+                }
+            } else if (currentMode === 'path') {
+                const obj = getObjectAt(x, y);
+                if (obj) {
+                    if (e.ctrlKey || e.metaKey) {
+                        const index = selectedObjects.indexOf(obj);
+                        if (index > -1) {
+                            selectedObjects.splice(index, 1);
+                        } else {
+                            selectedObjects.push(obj);
+                        }
+                    } else {
+                        if (!selectedObjects.includes(obj)) {
+                            selectedObjects = [obj];
+                        }
+                    }
+                } else if (selectedObjects.length > 0) {
+                    // Lägg till punkt i alla valda objekts banor
+                    if (keepFormation && selectedObjects.length > 1) {
+                        // Beräkna relativa positioner
+                        const firstObj = selectedObjects[0];
+                        const offsets = selectedObjects.map(obj => ({
+                            obj: obj,
+                            dx: obj.x - firstObj.x,
+                            dy: obj.y - firstObj.y
+                        }));
+
+                        // Lägg till punkter med bevarad formation
+                        offsets.forEach(({ obj, dx, dy }) => {
+                            obj.path.push({ x: x + dx, y: y + dy });
+                        });
+                    } else {
+                        // Alla får samma punkt
+                        selectedObjects.forEach(selObj => {
+                            selObj.path.push({ x: x, y: y });
+                        });
+                    }
+
+                    updateAnimationDuration();
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('saveVideoBtn').disabled = false;
+
+                    // Force immediate render to show the new path segment
+                    requestAnimationFrame(() => render());
+                }
+            } else if (currentMode === 'draw') {
+                // Start drawing shape
+                // Start drawing shape
+                isDragging = true;
+                isDrawing = true;
+                dragStartX = x;
+                dragStartY = y;
+
+                // Create temp object
+                currentDrawingObject = {
+                    id: Date.now(),
+                    type: currentDrawMode,
+                    x: x,
+                    y: y,
+                    width: 0,
+                    height: 0,
+                    endX: x,
+                    endY: y,
+                    color: '#333333', // Default color
+                    rotation: 0,
+                    path: [],
+                    startX: x,
+                    startY: y
+                };
+            }
+
+            updateClearPathButton();
+            updateRotationControl();
+            render();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const coords = getCanvasCoordinates(e);
+            const x = coords.x;
+            const y = coords.y;
+
+            if (currentMode === 'move' && isDragging && selectedObjects.length > 0) {
+                if (keepFormation && selectedObjects.length > 1) {
+                    // Behåll formation: alla objekt behåller sina relativa positioner
+                    const firstObj = selectedObjects[0];
+                    const newX = x - dragStartX;
+                    const newY = y - dragStartY;
+                    const deltaX = newX - firstObj.x;
+                    const deltaY = newY - firstObj.y;
+
+                    selectedObjects.forEach(obj => {
+                        obj.x += deltaX;
+                        obj.y += deltaY;
+                        obj.startX = obj.x;
+                        obj.startY = obj.y;
+                    });
+                } else {
+                    // Flytta bara det första objektet
+                    selectedObjects[0].x = x - dragStartX;
+                    selectedObjects[0].y = y - dragStartY;
+                    selectedObjects[0].startX = selectedObjects[0].x;
+                    selectedObjects[0].startY = selectedObjects[0].y;
+                }
+
+                render();
+            } else if (currentMode === 'draw' && isDragging && currentDrawingObject) {
+                currentDrawingObject.endX = x;
+                currentDrawingObject.endY = y;
+                currentDrawingObject.width = x - currentDrawingObject.x;
+                currentDrawingObject.height = y - currentDrawingObject.y;
+                render(); // Render to show the drawing in progress
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (currentMode === 'draw' && isDragging && currentDrawingObject) {
+                objects.push(currentDrawingObject);
+                currentDrawingObject = null;
+            }
+            isDragging = false;
+            render();
+        });
+
+        // Högerklick för att ta bort banpunkt
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+
+            if (currentMode === 'path' && selectedObjects.length > 0) {
+                const coords = getCanvasCoordinates(e);
+                const x = coords.x;
+                const y = coords.y;
+
+                selectedObjects.forEach(obj => {
+                    const pointIndex = getPathPointAt(obj, x, y);
+                    if (pointIndex !== null) {
+                        obj.path.splice(pointIndex, 1);
+                    }
+                });
+
+                updateAnimationDuration();
+                render();
+            }
+        });
+
+        // Tangentbord
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' && selectedObjects.length > 0) {
+                selectedObjects.forEach(selObj => {
+                    objects = objects.filter(obj => obj !== selObj);
+                });
+                selectedObjects = [];
+                updateClearPathButton();
+                render();
+            }
+        });
+
+        // Växla plantyp
+        // Växla plantyp
+        function setFieldType(type) {
+            fieldType = type;
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                if (btn.id === 'btn-lines' || btn.id === 'btn-plain') {
+                    btn.classList.remove('active');
+                }
+            });
+
+            if (type === 'lines') document.getElementById('btn-lines').classList.add('active');
+            if (type === 'plain') document.getElementById('btn-plain').classList.add('active');
+            render();
+        }
+
+        // Växla läge
+        // Växla läge
+        // Växla läge
+        function setMode(mode) {
+            currentMode = mode;
+
+            // Reset UI states
+            document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tool-item').forEach(item => {
+                item.classList.remove('active');
+                item.style.borderColor = '#e0e0e0';
+                item.style.backgroundColor = '#f8f9fa';
+            });
+
+            // Set active state for main buttons
+            if (mode === 'move') {
+                document.getElementById('btn-move').classList.add('active');
+                canvas.style.cursor = 'default';
+            } else if (mode === 'path') {
+                document.getElementById('btn-path').classList.add('active');
+                canvas.style.cursor = 'crosshair';
+            } else if (mode === 'eraser') {
+                const eraserBtn = document.getElementById('btn-eraser');
+                if (eraserBtn) {
+                    eraserBtn.classList.add('active');
+                    eraserBtn.style.borderColor = 'var(--accent-color)';
+                    eraserBtn.style.backgroundColor = '#e3f2fd';
+                }
+                canvas.style.cursor = 'not-allowed'; // Visual cue for eraser
+            } else if (mode === 'draw') {
+                canvas.style.cursor = 'crosshair';
+            }
+
+            render();
+        }
+
+        // Växla ritläge
+        function setDrawMode(shape) {
+            setMode('draw');
+            currentDrawMode = shape;
+
+            // Highlight selected tool
+            const btnId = 'btn-draw-' + shape;
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.classList.add('active');
+                btn.style.borderColor = 'var(--accent-color)';
+                btn.style.backgroundColor = '#e3f2fd';
+            }
+
+            // Update drawing properties
+            currentShapeColor = '#333333';
+            currentShapePathStyle = currentPathStyle;
+            currentShapePathWidth = currentPathWidth;
+        }
+
+        // Växla synlighet för banor
+        function togglePathVisibility() {
+            pathVisibilityMode = document.getElementById('pathVisibilitySelect').value;
+            render();
+        }
+
+        // Växla behåll formation
+        function toggleKeepFormation() {
+            keepFormation = document.getElementById('keepFormationCheckbox').checked;
+        }
+
+        // Ändra bantyp
+        function changePathType() {
+            pathType = document.getElementById('pathTypeSelect').value;
+            render();
+        }
+
+        // Ändra linjestil
+        function changePathStyle() {
+            currentPathStyle = document.getElementById('pathStyleSelect').value;
+            render();
+        }
+
+        // Ändra linjetjocklek
+        function changePathWidth() {
+            currentPathWidth = parseInt(document.getElementById('pathWidthSelect').value);
+            render();
+        }
+
+        // Beräkna animationens längd
+        function updateAnimationDuration() {
+            animationDuration = 0;
+
+            objects.forEach(obj => {
+                if (obj.path && obj.path.length > 0) {
+                    // Fullständig bana inklusive startpunkt
+                    const fullPath = [{ x: obj.startX, y: obj.startY }, ...obj.path];
+
+                    let totalDist = 0;
+                    for (let i = 0; i < fullPath.length - 1; i++) {
+                        const dist = Math.sqrt(
+                            (fullPath[i + 1].x - fullPath[i].x) ** 2 +
+                            (fullPath[i + 1].y - fullPath[i].y) ** 2
+                        );
+                        totalDist += dist;
+                    }
+
+                    const duration = totalDist / 100;
+                    if (duration > animationDuration) {
+                        animationDuration = duration;
+                    }
+                }
+            });
+
+            updateTimeline(0);
+        }
+
+        // Interpolera position längs banan
+        function getPositionAtTime(obj, time) {
+            if (!obj.path || obj.path.length === 0) {
+                return { x: obj.startX, y: obj.startY };
+            }
+
+            // Fullständig bana inklusive startpunkt
+            const fullPath = [{ x: obj.startX, y: obj.startY }, ...obj.path];
+
+            let totalDist = 0;
+            const segments = [];
+
+            for (let i = 0; i < fullPath.length - 1; i++) {
+                const dist = Math.sqrt(
+                    (fullPath[i + 1].x - fullPath[i].x) ** 2 +
+                    (fullPath[i + 1].y - fullPath[i].y) ** 2
+                );
+                segments.push({
+                    startX: fullPath[i].x,
+                    startY: fullPath[i].y,
+                    endX: fullPath[i + 1].x,
+                    endY: fullPath[i + 1].y,
+                    dist: dist
+                });
+                totalDist += dist;
+            }
+
+            const speed = 100;
+            const targetDist = time * speed;
+
+            if (targetDist >= totalDist) {
+                return {
+                    x: fullPath[fullPath.length - 1].x,
+                    y: fullPath[fullPath.length - 1].y
+                };
+            }
+
+            let accDist = 0;
+            for (let seg of segments) {
+                if (accDist + seg.dist >= targetDist) {
+                    const t = (targetDist - accDist) / seg.dist;
+
+                    if (pathType === 'straight') {
+                        return {
+                            x: seg.startX + (seg.endX - seg.startX) * t,
+                            y: seg.startY + (seg.endY - seg.startY) * t
+                        };
+                    } else {
+                        // För böjda banor, använd enklare interpolation
+                        // (fullständig Catmull-Rom skulle vara för tungt här)
+                        return {
+                            x: seg.startX + (seg.endX - seg.startX) * t,
+                            y: seg.startY + (seg.endY - seg.startY) * t
+                        };
+                    }
+                }
+                accDist += seg.dist;
+            }
+
+            return { x: obj.startX, y: obj.startY };
+        }
+
+        // Uppspelning
+        function playAnimation() {
+            if (objects.every(obj => !obj.path || obj.path.length === 0)) {
+                alert('Inga banor att spela upp! Gå till Banläge och klicka ut punkter.');
+                return;
+            }
+
+            updateAnimationDuration();
+
+            isPlaying = true;
+            playbackStartTime = Date.now();
+
+            // Update UI
+            document.getElementById('playIcon').style.display = 'none';
+            document.getElementById('pauseIcon').style.display = 'block';
+
+            // Dölj markeringar under uppspelning
+            const tempSelectedObjects = [...selectedObjects];
+            selectedObjects = [];
+
+            const originalPositions = {};
+            objects.forEach(obj => {
+                originalPositions[obj.id] = { x: obj.x, y: obj.y };
+            });
+
+            function animate() {
+                if (!isPlaying) return;
+
+                const elapsed = ((Date.now() - playbackStartTime) / 1000) * playbackSpeed;
+
+                if (elapsed >= animationDuration) {
+                    isPlaying = false;
+                    // Update UI
+                    document.getElementById('playIcon').style.display = 'block';
+                    document.getElementById('pauseIcon').style.display = 'none';
+                    updateTimeline(100);
+
+                    selectedObjects = tempSelectedObjects;
+
+                    objects.forEach(obj => {
+                        if (obj.path && obj.path.length > 0) {
+                            obj.x = obj.path[obj.path.length - 1].x;
+                            obj.y = obj.path[obj.path.length - 1].y;
+                        }
+                    });
+                    render();
+                    return;
+                }
+
+                objects.forEach(obj => {
+                    if (obj.path && obj.path.length > 0) {
+                        const pos = getPositionAtTime(obj, elapsed);
+                        obj.x = pos.x;
+                        obj.y = pos.y;
+                    }
+                });
+                updateTimeline((elapsed / animationDuration) * 100);
+                render(true);
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        function updateTimeline(percent) {
+            const slider = document.getElementById('timelineSlider');
+            const timeDisplay = document.getElementById('timelineTime');
+
+            slider.value = percent;
+
+            const current = (animationDuration * percent / 100).toFixed(1);
+            // Format time as MM:SS
+            const minutes = Math.floor(current / 60).toString().padStart(2, '0');
+            const seconds = Math.floor(current % 60).toString().padStart(2, '0');
+            timeDisplay.textContent = `${minutes}:${seconds}`;
+        }
+
+        function seekTimeline(e) {
+            if (animationDuration === 0) return;
+
+            const slider = e.target;
+            const percent = parseFloat(slider.value);
+            const time = (animationDuration * percent / 100);
+
+            objects.forEach(obj => {
+                if (obj.path && obj.path.length > 0) {
+                    const pos = getPositionAtTime(obj, time);
+                    obj.x = pos.x;
+                    obj.y = pos.y;
+                }
+            });
+
+            updateTimeline(percent);
+            render();
+        }
+
+        function updateSpeed() {
+            playbackSpeed = parseFloat(document.getElementById('speedSlider').value);
+            document.getElementById('speedValue').textContent = playbackSpeed.toFixed(1) + 'x';
+        }
+
+        // Återställ till startpositioner (Rewind)
+        function resetToStart() {
+            objects.forEach(obj => {
+                obj.x = obj.startX;
+                obj.y = obj.startY;
+            });
+            updateTimeline(0);
+            render();
+        }
+
+        function resetAnimation() {
+            isPlaying = false;
+            document.getElementById('playIcon').style.display = 'block';
+            document.getElementById('pauseIcon').style.display = 'none';
+            resetToStart();
+        }
+
+        // Rensa vald bana
+        function clearSelectedPath() {
+            if (selectedObjects.length > 0) {
+                selectedObjects.forEach(obj => {
+                    obj.path = [];
+                    obj.x = obj.startX;
+                    obj.y = obj.startY;
+                });
+                updateAnimationDuration();
+                updateClearPathButton();
+                render();
+            }
+        }
+
+        function updateClearPathButton() {
+            const btn = document.getElementById('clearPathBtn');
+            btn.disabled = selectedObjects.length === 0 || selectedObjects.every(obj => !obj.path || obj.path.length === 0);
+        }
+
+        function updateRotationControl() {
+            const div = document.getElementById('rotationControl');
+            // Show controls if any object is selected
+            if (selectedObjects.length > 0) {
+                div.style.display = 'block';
+            } else {
+                div.style.display = 'none';
+            }
+        }
+
+        function rotateSelected() {
+            if (selectedObjects.length > 0) {
+                selectedObjects.forEach(obj => {
+                    obj.rotation = (obj.rotation || 0) + 90;
+                });
+                render();
+            }
+        }
+
+        function deleteSelected() {
+            if (selectedObjects.length > 0) {
+                selectedObjects.forEach(selObj => {
+                    objects = objects.filter(obj => obj !== selObj);
+                });
+                selectedObjects = [];
+                updateClearPathButton();
+                updateRotationControl();
+                render();
+            }
+        }
+
+        // Rensa canvas
+        function clearCanvas() {
+            if (confirm('Vill du verkligen rensa allt?')) {
+                objects = [];
+                selectedObjects = [];
+                animationDuration = 0;
+                isPlaying = false;
+                document.getElementById('playBtn').disabled = true;
+                document.getElementById('playIcon').style.display = 'block';
+                document.getElementById('pauseIcon').style.display = 'none';
+                document.getElementById('saveVideoBtn').disabled = true;
+                updateClearPathButton();
+                updateTimeline(0);
+                render();
+            }
+        }
+
+        // Exportera bild
+        function exportImage() {
+            // Dölj markeringar
+            const tempSelectedObjects = [...selectedObjects];
+            selectedObjects = [];
+            render(true);
+
+            const link = document.createElement('a');
+            link.download = 'fotbollsövning-' + Date.now() + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            // Återställ markeringar
+            selectedObjects = tempSelectedObjects;
+            render();
+        }
+
+        // Toggle Mic
+        function toggleMic() {
+            isMicActive = !isMicActive;
+            const btn = document.getElementById('micBtn');
+            const onIcon = document.getElementById('micOnIcon');
+            const offIcon = document.getElementById('micOffIcon');
+
+            if (isMicActive) {
+                btn.classList.remove('inactive');
+                btn.classList.add('active');
+                onIcon.style.display = 'block';
+                offIcon.style.display = 'none';
+            } else {
+                btn.classList.remove('active');
+                btn.classList.add('inactive');
+                onIcon.style.display = 'none';
+                offIcon.style.display = 'block';
+            }
+        }
+
+        // Starta/Stoppa inspelning (Real-time)
+        async function toggleRecording() {
+            const btn = document.getElementById('recordBtn');
+
+            if (!isRecording) {
+                // START RECORDING
+                try {
+                    const canvasStream = canvas.captureStream(30); // 30 FPS
+                    let finalStream = canvasStream;
+
+                    // Audio setup
+                    if (isMicActive) {
+                        try {
+                            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            finalStream = new MediaStream([
+                                ...canvasStream.getVideoTracks(),
+                                ...audioStream.getAudioTracks()
+                            ]);
+                        } catch (err) {
+                            console.error("Could not get audio stream:", err);
+                            alert("Kunde inte komma åt mikrofonen. Videon sparas utan ljud.");
+                            audioStream = null;
+                        }
+                    }
+
+                    let mimeType = 'video/mp4';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264')) mimeType = 'video/mp4;codecs=h264';
+                        else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) mimeType = 'video/mp4;codecs=avc1';
+                        else mimeType = 'video/webm';
+                    }
+
+                    recordedChunks = [];
+                    mediaRecorder = new MediaRecorder(finalStream, {
+                        mimeType: mimeType,
+                        videoBitsPerSecond: 2500000
+                    });
+
+                    mediaRecorder.ondataavailable = e => {
+                        if (e.data.size > 0) recordedChunks.push(e.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        // Cleanup audio
+                        if (audioStream) {
+                            audioStream.getTracks().forEach(track => track.stop());
+                            audioStream = null;
+                        }
+
+                        recordedBlob = new Blob(recordedChunks, { type: mimeType });
+
+                        // Enable Save Button
+                        const saveBtn = document.getElementById('saveVideoBtn');
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Spara Video (' + (recordedBlob.size / 1024 / 1024).toFixed(1) + ' MB)';
+
+                        // Reset Rec Button
+                        btn.classList.remove('active');
+                        isRecording = false;
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.add('active');
+
+                    // Disable Save button while recording
+                    document.getElementById('saveVideoBtn').disabled = true;
+                    document.getElementById('saveVideoBtn').textContent = 'Spara Video';
+
+                } catch (err) {
+                    console.error("Error starting recording:", err);
+                    alert("Kunde inte starta inspelning: " + err.message);
+                }
+            } else {
+                // STOP RECORDING
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+            }
+        }
+
+        function saveVideo() {
+            if (!recordedBlob) return;
+
+            const url = URL.createObjectURL(recordedBlob);
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style = 'display: none';
+            a.href = url;
+            a.download = 'fotbollsövning-' + Date.now() + '.mp4';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        // Initial rendering
+        setMode('move');
+        setFieldType('lines');
+        render();
+    </script>
+</body>
+
+</html>
