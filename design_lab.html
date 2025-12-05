@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Labb - Fotbollsverktyg</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .canvas-container {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        canvas {
+            background: #7cb342;
+            /* Gräsgrön */
+            cursor: default;
+        }
+
+        .controls {
+            margin-top: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Design Labb 🧪</h1>
+    <p>Här testar vi nya utseenden för spelare och markeringar.</p>
+
+    <div class="canvas-container">
+        <canvas id="labCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <div class="controls">
+        <button onclick="render()">Rita om</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('labCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Mock Data - Olika stilar
+        const styles = [
+            { name: "Original", type: "flat", shadow: false, border: false },
+            { name: "Skugga", type: "flat", shadow: true, border: false },
+            { name: "Kantlinje", type: "flat", shadow: false, border: true },
+            { name: "3D Effekt", type: "gradient", shadow: true, border: false },
+            { name: "Ring", type: "ring", shadow: true, border: false },
+        ];
+
+        const players = [
+            { color: '#402A5B', label: '1' },
+            { color: '#C39956', label: '2' },
+            { color: '#FFFFFF', label: '3' }, // Vit
+        ];
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Rita rutnät
+            let startY = 50;
+            const rowHeight = 100;
+
+            styles.forEach((style, index) => {
+                const y = startY + (index * rowHeight);
+
+                // Rita etikett
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(style.name, 20, y);
+
+                // Rita spelare i denna stil
+                players.forEach((player, pIndex) => {
+                    const x = 150 + (pIndex * 100);
+                    drawPlayer(ctx, x, y, player.color, player.label, style);
+
+                    // Rita markeringsexempel på den sista
+                    if (pIndex === 2) {
+                        drawSelection(ctx, x, y, 30); // 30 = radie
+                    }
+                });
+            });
+        }
+
+        function drawPlayer(ctx, x, y, color, label, style) {
+            const size = 30; // Radie
+
+            ctx.save();
+
+            // Skugga
+            if (style.shadow) {
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 4;
+            }
+
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+
+            // Fyllning
+            if (style.type === 'gradient') {
+                const grad = ctx.createRadialGradient(x - 10, y - 10, 5, x, y, size);
+                grad.addColorStop(0, lighten(color, 40));
+                grad.addColorStop(1, color);
+                ctx.fillStyle = grad;
+            } else {
+                ctx.fillStyle = color;
+            }
+
+            ctx.fill();
+
+            // Kantlinje
+            if (style.border || color === '#FFFFFF') {
+                ctx.strokeStyle = '#ccc';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Ring-stil (extra)
+            if (style.type === 'ring') {
+                ctx.beginPath();
+                ctx.arc(x, y, size - 5, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // Exempel på ny markering (istället för fyrkant)
+        function drawSelection(ctx, x, y, radius) {
+            ctx.save();
+            ctx.strokeStyle = '#00ff00'; // Neon grön
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+
+            ctx.beginPath();
+            ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Hjälpfunktion för färg
+        function lighten(color, percent) {
+            // Enkel mock för demo, returnerar bara en ljusare färg om det är hex
+            // (Förenklad logik för demo)
+            return color;
+        }
+
+        render();
+    </script>
+</body>
+
+</html>

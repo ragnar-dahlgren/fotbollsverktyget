@@ -664,39 +664,47 @@
             <div class="tool-section">
                 <div class="section-title">Inställningar</div>
 
-                <div class="form-group">
-                    <label class="form-label">Banvisning</label>
-                    <select id="pathVisibilitySelect" class="form-select" onchange="togglePathVisibility()">
-                        <option value="visible_points">Visa bana med punkter</option>
-                        <option value="visible_no_points">Visa bana utan punkter</option>
-                        <option value="hidden">Dölj bana</option>
-                    </select>
-                </div>
+                <div id="settings-path" class="hidden">
+                    <div class="form-group">
+                        <label class="form-label">Banvisning</label>
+                        <select id="pathVisibilitySelect" class="form-select" onchange="togglePathVisibility()">
+                            <option value="visible_points">Visa bana med punkter</option>
+                            <option value="visible_no_points">Visa bana utan punkter</option>
+                            <option value="hidden">Dölj bana</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Bantyp</label>
-                    <select id="pathTypeSelect" class="form-select" onchange="changePathType()">
-                        <option value="straight" selected>Rak linje</option>
-                        <option value="curved">Böjd linje</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label class="form-label">Bantyp</label>
+                        <select id="pathTypeSelect" class="form-select" onchange="changePathType()">
+                            <option value="straight" selected>Rak linje</option>
+                            <option value="curved">Böjd linje</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Linjestil</label>
-                    <select id="pathStyleSelect" class="form-select" onchange="changePathStyle()">
-                        <option value="dashed">Streckad linje</option>
-                        <option value="dotted">Prickad linje</option>
-                        <option value="solid">Heldragen linje</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label class="form-label">Linjestil</label>
+                        <select id="pathStyleSelect" class="form-select" onchange="changePathStyle()">
+                            <option value="dashed">Streckad linje</option>
+                            <option value="dotted">Prickad linje</option>
+                            <option value="solid">Heldragen linje</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">Linjetjocklek</label>
-                    <select id="pathWidthSelect" class="form-select" onchange="changePathWidth()">
-                        <option value="2">Tunn</option>
-                        <option value="4">Normal</option>
-                        <option value="6">Tjock</option>
-                    </select>
+                    <div class="form-group">
+                        <label class="form-label">Linjetjocklek</label>
+                        <select id="pathWidthSelect" class="form-select" onchange="changePathWidth()">
+                            <option value="2">Tunn</option>
+                            <option value="4">Normal</option>
+                            <option value="6">Tjock</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 10px;">
+                        <button class="btn" onclick="clearSelectedPath()" style="width: 100%;" id="clearPathBtn"
+                            disabled>Rensa
+                            bana för vald</button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -1757,19 +1765,28 @@
                 document.getElementById('btn-move').classList.add('active');
                 canvas.style.cursor = 'default';
 
-                // Enable Objects, Disable Draw
+                // Show Objects, Hide Draw
                 const objSection = document.getElementById('section-objects');
+                objSection.classList.remove('hidden'); // Show
                 objSection.classList.remove('disabled');
-                objSection.style.pointerEvents = 'auto'; // Force enable
-                document.getElementById('section-draw').classList.add('disabled');
+                objSection.style.pointerEvents = 'auto';
+
+                document.getElementById('section-draw').classList.add('hidden'); // Hide
+
+                // Hide Path Settings
+                document.getElementById('settings-path').classList.add('hidden');
 
             } else if (mode === 'path') {
                 document.getElementById('btn-path').classList.add('active');
                 canvas.style.cursor = 'crosshair';
 
-                // Enable Objects, Disable Draw
+                // Show Objects, Hide Draw
+                document.getElementById('section-objects').classList.remove('hidden');
                 document.getElementById('section-objects').classList.remove('disabled');
-                document.getElementById('section-draw').classList.add('disabled');
+                document.getElementById('section-draw').classList.add('hidden');
+
+                // Show Path Settings
+                document.getElementById('settings-path').classList.remove('hidden');
 
             } else if (mode === 'eraser') {
                 const eraserBtn = document.getElementById('btn-eraser');
@@ -1780,17 +1797,25 @@
                 }
                 canvas.style.cursor = 'not-allowed'; // Visual cue for eraser
 
-                // Disable Objects, Enable Draw (Eraser is in Draw section)
-                document.getElementById('section-objects').classList.add('disabled');
+                // Hide Objects, Show Draw
+                document.getElementById('section-objects').classList.add('hidden');
+                document.getElementById('section-draw').classList.remove('hidden');
                 document.getElementById('section-draw').classList.remove('disabled');
+
+                // Hide Path Settings
+                document.getElementById('settings-path').classList.add('hidden');
 
             } else if (mode === 'draw_menu') {
                 document.getElementById('btn-draw-menu').classList.add('active');
                 canvas.style.cursor = 'default';
 
-                // Disable Objects, Enable Draw
-                document.getElementById('section-objects').classList.add('disabled');
+                // Hide Objects, Show Draw
+                document.getElementById('section-objects').classList.add('hidden');
+                document.getElementById('section-draw').classList.remove('hidden');
                 document.getElementById('section-draw').classList.remove('disabled');
+
+                // Hide Path Settings
+                document.getElementById('settings-path').classList.add('hidden');
 
                 // Don't set currentMode to 'draw' yet, wait for shape selection
                 // But we need to prevent dragging objects
@@ -1800,9 +1825,13 @@
                 document.getElementById('btn-draw-menu').classList.add('active');
                 canvas.style.cursor = 'crosshair';
 
-                // Disable Objects, Enable Draw
-                document.getElementById('section-objects').classList.add('disabled');
+                // Hide Objects, Show Draw
+                document.getElementById('section-objects').classList.add('hidden');
+                document.getElementById('section-draw').classList.remove('hidden');
                 document.getElementById('section-draw').classList.remove('disabled');
+
+                // Hide Path Settings
+                document.getElementById('settings-path').classList.add('hidden');
             }
 
             render();
