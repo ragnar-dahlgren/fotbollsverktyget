@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Design Labb - Fotbollsverktyg</title>
+    <title>Design Labb - Realistiska Spelare</title>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -35,140 +35,213 @@
         .controls {
             margin-top: 20px;
             background: white;
-            padding: 15px;
+            padding: 20px;
             border-radius: 8px;
             display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .control-group {
+            display: flex;
             gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: #555;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Design Labb 🧪</h1>
-    <p>Här testar vi nya utseenden för spelare och markeringar.</p>
+    <h1>Design Labb: Realistiska Spelare 👕</h1>
+    <p>Testar top-down vy med tröja, shorts och strumpor.</p>
 
     <div class="canvas-container">
-        <canvas id="labCanvas" width="800" height="600"></canvas>
+        <canvas id="labCanvas" width="600" height="400"></canvas>
     </div>
 
     <div class="controls">
-        <button onclick="render()">Rita om</button>
+        <div class="control-group">
+            <label>Tröjfärg (Lag 1)</label>
+            <input type="color" id="jerseyColor1" value="#e74c3c" onchange="render()">
+        </div>
+        <div class="control-group">
+            <label>Shortsfärg</label>
+            <input type="color" id="shortsColor" value="#ffffff" onchange="render()">
+        </div>
+        <div class="control-group">
+            <label>Strumpor</label>
+            <input type="color" id="socksColor" value="#e74c3c" onchange="render()">
+        </div>
+        <div class="control-group">
+            <label>Hudfärg</label>
+            <input type="color" id="skinColor" value="#ffdbac" onchange="render()">
+        </div>
+        <div style="border-top: 1px solid #eee; margin: 10px 0;"></div>
+        <div class="control-group">
+            <button class="btn" onclick="render()">Uppdatera</button>
+        </div>
     </div>
 
     <script>
         const canvas = document.getElementById('labCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Mock Data - Olika stilar
-        const styles = [
-            { name: "Original", type: "flat", shadow: false, border: false },
-            { name: "Skugga", type: "flat", shadow: true, border: false },
-            { name: "Kantlinje", type: "flat", shadow: false, border: true },
-            { name: "3D Effekt", type: "gradient", shadow: true, border: false },
-            { name: "Ring", type: "ring", shadow: true, border: false },
-        ];
-
-        const players = [
-            { color: '#402A5B', label: '1' },
-            { color: '#C39956', label: '2' },
-            { color: '#FFFFFF', label: '3' }, // Vit
-        ];
-
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Rita rutnät
-            let startY = 50;
-            const rowHeight = 100;
+            const jerseyColor1 = document.getElementById('jerseyColor1').value;
+            const shortsColor = document.getElementById('shortsColor').value;
+            const socksColor = document.getElementById('socksColor').value;
+            const skinColor = document.getElementById('skinColor').value;
 
-            styles.forEach((style, index) => {
-                const y = startY + (index * rowHeight);
+            // Rita rutnät/gräs detaljer
+            drawPitchDetails(ctx);
 
-                // Rita etikett
-                ctx.fillStyle = '#fff';
-                ctx.font = '14px sans-serif';
-                ctx.textAlign = 'left';
-                ctx.fillText(style.name, 20, y);
+            // Rita spelare (Lag 1)
+            drawDetailedPlayer(ctx, 150, 200, jerseyColor1, shortsColor, socksColor, skinColor, "10");
+            drawDetailedPlayer(ctx, 250, 150, jerseyColor1, shortsColor, socksColor, skinColor, "7");
 
-                // Rita spelare i denna stil
-                players.forEach((player, pIndex) => {
-                    const x = 150 + (pIndex * 100);
-                    drawPlayer(ctx, x, y, player.color, player.label, style);
+            // Rita spelare (Lag 2 - Exempel)
+            drawDetailedPlayer(ctx, 450, 200, "#3498db", "#ffffff", "#3498db", skinColor, "9");
 
-                    // Rita markeringsexempel på den sista
-                    if (pIndex === 2) {
-                        drawSelection(ctx, x, y, 30); // 30 = radie
-                    }
-                });
-            });
+            // Rita en markerad spelare
+            drawDetailedPlayer(ctx, 350, 250, jerseyColor1, shortsColor, socksColor, skinColor, "4", true);
         }
 
-        function drawPlayer(ctx, x, y, color, label, style) {
-            const size = 30; // Radie
+        function drawPitchDetails(ctx) {
+            ctx.strokeStyle = "rgba(255,255,255,0.2)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(300, 200, 50, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(300, 0);
+            ctx.lineTo(300, 400);
+            ctx.stroke();
+        }
+
+        function drawDetailedPlayer(ctx, x, y, jerseyColor, shortsColor, socksColor, skinColor, number, isSelected = false) {
+            const scale = 1.2; // Skala upp lite för tydlighet
 
             ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
 
             // Skugga
-            if (style.shadow) {
-                ctx.shadowColor = 'rgba(0,0,0,0.3)';
-                ctx.shadowBlur = 10;
-                ctx.shadowOffsetY = 4;
-            }
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetY = 2;
 
+            // 1. STRUMPOR (Fötter)
+            // Lite isär, pekar framåt (nedåt i bild)
+            ctx.fillStyle = socksColor;
+
+            // Vänster fot
             ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-
-            // Fyllning
-            if (style.type === 'gradient') {
-                const grad = ctx.createRadialGradient(x - 10, y - 10, 5, x, y, size);
-                grad.addColorStop(0, lighten(color, 40));
-                grad.addColorStop(1, color);
-                ctx.fillStyle = grad;
-            } else {
-                ctx.fillStyle = color;
-            }
-
+            ctx.ellipse(-8, 12, 4, 6, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Kantlinje
-            if (style.border || color === '#FFFFFF') {
-                ctx.strokeStyle = '#ccc';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-
-            // Ring-stil (extra)
-            if (style.type === 'ring') {
-                ctx.beginPath();
-                ctx.arc(x, y, size - 5, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-
-            ctx.restore();
-        }
-
-        // Exempel på ny markering (istället för fyrkant)
-        function drawSelection(ctx, x, y, radius) {
-            ctx.save();
-            ctx.strokeStyle = '#00ff00'; // Neon grön
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);
-
+            // Höger fot
             ctx.beginPath();
-            ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.ellipse(8, 12, 4, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. SHORTS
+            ctx.fillStyle = shortsColor;
+            // Rita som en rundad rektangel under tröjan
+            ctx.beginPath();
+            ctx.roundRect(-11, 2, 22, 12, 4);
+            ctx.fill();
+
+            // 3. ARMAR (Hud)
+            ctx.fillStyle = skinColor;
+            // Vänster arm
+            ctx.beginPath();
+            ctx.ellipse(-16, -2, 4, 8, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+            // Höger arm
+            ctx.beginPath();
+            ctx.ellipse(16, -2, 4, 8, -Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 4. TRÖJA (Kropp)
+            ctx.fillStyle = jerseyColor;
+            ctx.beginPath();
+            ctx.arc(0, -2, 14, 0, Math.PI * 2); // Axelparti
+            ctx.fill();
+
+            // 5. HUVUD
+            ctx.fillStyle = skinColor;
+            ctx.beginPath();
+            ctx.arc(0, -2, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 6. NUMMER (På tröjan/ryggen - men vi ser uppifrån, så kanske på huvudet eller axlarna?)
+            // Vanligtvis ser man numret på ryggen om de lutar, men i ren top-down ser man bara huvud.
+            // Vi lägger numret på tröjan (axlarna) eller "svävande" över.
+            // För tydlighetens skull, låt oss lägga det på tröjan (kroppen) om det får plats, annars skippa.
+            // Här ritar vi det vitt på tröjan för kontrast.
+            ctx.shadowColor = 'transparent'; // Ingen skugga på text
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // ctx.fillText(number, 0, -2); // Numret syns dåligt under huvudet.
+
+            // Alternativ: Rita numret bredvid eller på huvudet (som en hjälm? nej).
+            // Vi skippar nummer i den grafiska vyn för nu, eller ritar det väldigt litet på shortsen?
+            // Låt oss rita det på shortsen!
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 8px Arial';
+            ctx.fillText(number, 0, 8); // På shortsen
 
             ctx.restore();
-        }
 
-        // Hjälpfunktion för färg
-        function lighten(color, percent) {
-            // Enkel mock för demo, returnerar bara en ljusare färg om det är hex
-            // (Förenklad logik för demo)
-            return color;
+            // MARKERING
+            if (isSelected) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.scale(scale, scale);
+
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.restore();
+            }
         }
 
         render();

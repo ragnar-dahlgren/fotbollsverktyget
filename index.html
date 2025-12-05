@@ -824,6 +824,7 @@
         let isDragging = false;
         let dragStartX = 0;
         let dragStartY = 0;
+        let selectionBox = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 };
         let currentMode = 'move'; // move, path, draw, eraser
         let currentDrawMode = null; // rect, circle, triangle, line, arrow
         let isDrawing = false;
@@ -1384,6 +1385,17 @@
             if (isDrawing && currentDrawingObject) {
                 drawObject(currentDrawingObject, true);
             }
+
+            // Draw selection box if active
+            if (selectionBox.active) {
+                ctx.strokeStyle = 'rgba(0, 123, 255, 0.8)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(selectionBox.startX, selectionBox.startY,
+                    selectionBox.currentX - selectionBox.startX,
+                    selectionBox.currentY - selectionBox.startY);
+                ctx.setLineDash([]);
+            }
         }
 
         // Lägg till objekt
@@ -1512,9 +1524,11 @@
 
             if (currentMode === 'move') {
                 const obj = getObjectAt(x, y);
+
                 if (obj) {
-                    if (e.ctrlKey || e.metaKey) {
-                        // Ctrl-klick: lägg till/ta bort från urval
+                    // Clicked on an object
+                    if (e.shiftKey || e.ctrlKey || e.metaKey) { // Allow Ctrl/Cmd for multi-select
+                        // Shift-click: Toggle selection
                         const index = selectedObjects.indexOf(obj);
                         if (index > -1) {
                             selectedObjects.splice(index, 1);
@@ -1522,16 +1536,32 @@
                             selectedObjects.push(obj);
                         }
                     } else {
-                        // Vanlig klick: välj bara detta objekt
+                        // Normal click
                         if (!selectedObjects.includes(obj)) {
+                            // If clicking an unselected object, select ONLY it (unless dragging)
                             selectedObjects = [obj];
                         }
-                        isDragging = true;
-                        dragStartX = x - obj.x;
-                        dragStartY = y - obj.y;
+                        // If clicking a selected object, keep selection (might be start of drag)
                     }
-                } else if (!e.ctrlKey && !e.metaKey) {
-                    selectedObjects = [];
+
+                    isDragging = true;
+                    // Store offsets for all selected objects
+                    selectedObjects.forEach(o => {
+                        o.dragOffsetX = x - o.x;
+                        o.dragOffsetY = y - o.y;
+                    });
+
+                } else {
+                    // Clicked on empty space
+                    if (!e.shiftKey && !e.ctrlKey && !e.metaKey) { // Clear selection only if no modifier key
+                        selectedObjects = []; // Clear selection
+                    }
+                    // Start Selection Box
+                    selectionBox.active = true;
+                    selectionBox.startX = x;
+                    selectionBox.startY = y;
+                    selectionBox.currentX = x;
+                    selectionBox.currentY = y;
                 }
             } else if (currentMode === 'eraser') {
                 // Check for objects (players, balls, etc.)
@@ -1556,130 +1586,115 @@
                                 if (x >= Math.min(o.x, o.endX) - 10 && x <= Math.max(o.x, o.endX) + 10 &&
                                     y >= Math.min(o.y, o.endY) - 10 && y <= Math.max(o.y, o.endY) + 10) {
                                     obj = o;
-                                    break;
+                                    if (obj) {
+                                        // Remove object
+                                        const index = objects.indexOf(obj);
+                                        if (index > -1) {
+                                            objects.splice(index, 1);
+                                            // Also remove from selection if present
+                                            const selIndex = selectedObjects.indexOf(obj);
+                                            if (selIndex > -1) {
+                                                selectedObjects.splice(selIndex, 1);
+                                            }
+                                            render(); // Force render
+                                        }
+                                    }
+                                } else if (currentMode === 'path') {
+                                    const obj = getObjectAt(x, y);
+                                    if (obj) {
+                                        if (e.ctrlKey || e.metaKey) {
+                                            const index = selectedObjects.indexOf(obj);
+                                            if (index > -1) {
+                                                selectedObjects.splice(index, 1);
+                                            } else {
+                                                selectedObjects.push(obj);
+                                            }
+                                        } else {
+                                            if (!selectedObjects.includes(obj)) {
+                                                selectedObjects = [obj];
+                                            }
+                                        }
+                                    } else if (selectedObjects.length > 0) {
+                                        // Lägg till punkt i alla valda objekts banor
+                                        if (keepFormation && selectedObjects.length > 1) {
+                                            // Beräkna relativa positioner
+                                            const firstObj = selectedObjects[0];
+                                            const offsets = selectedObjects.map(obj => ({
+                                                obj: obj,
+                                                dx: obj.x - firstObj.x,
+                                                dy: obj.y - firstObj.y
+                                            }));
+
+                                            // Lägg till punkter med bevarad formation
+                                            offsets.forEach(({ obj, dx, dy }) => {
+                                                obj.path.push({ x: x + dx, y: y + dy });
+                                            });
+                                        } else {
+                                            // Alla får samma punkt
+                                            selectedObjects.forEach(selObj => {
+                                                selObj.path.push({ x: x, y: y });
+                                            });
+                                        }
+
+                                        updateAnimationDuration();
+                                        document.getElementById('playBtn').disabled = false;
+                                        document.getElementById('saveVideoBtn').disabled = false;
+
+                                        // Force immediate render to show the new path segment
+                                        requestAnimationFrame(() => render());
+                                    }
+                                } else if (currentMode === 'draw') {
+                                    // Start drawing shape
+                                    isDragging = true;
+                                    isDrawing = true;
+                                    dragStartX = x;
+                                    dragStartY = y;
+
+                                    // Create temp object
+                                    currentDrawingObject = {
+                                        id: Date.now(),
+                                        type: currentDrawMode,
+                                        x: x,
+                                        y: y,
+                                        width: 0,
+                                        height: 0,
+                                        endX: x,
+                                        endY: y,
+                                        color: '#333333', // Default color
+                                        rotation: 0,
+                                        path: [],
+                                        startX: x,
+                                        startY: y
+                                    };
                                 }
-                            }
-                        }
-                    }
-                }
 
-                if (obj) {
-                    // Remove object
-                    const index = objects.indexOf(obj);
-                    if (index > -1) {
-                        objects.splice(index, 1);
-                        // Also remove from selection if present
-                        const selIndex = selectedObjects.indexOf(obj);
-                        if (selIndex > -1) {
-                            selectedObjects.splice(selIndex, 1);
-                        }
-                        render(); // Force render
-                    }
-                }
-            } else if (currentMode === 'path') {
-                const obj = getObjectAt(x, y);
-                if (obj) {
-                    if (e.ctrlKey || e.metaKey) {
-                        const index = selectedObjects.indexOf(obj);
-                        if (index > -1) {
-                            selectedObjects.splice(index, 1);
-                        } else {
-                            selectedObjects.push(obj);
-                        }
-                    } else {
-                        if (!selectedObjects.includes(obj)) {
-                            selectedObjects = [obj];
-                        }
-                    }
-                } else if (selectedObjects.length > 0) {
-                    // Lägg till punkt i alla valda objekts banor
-                    if (keepFormation && selectedObjects.length > 1) {
-                        // Beräkna relativa positioner
-                        const firstObj = selectedObjects[0];
-                        const offsets = selectedObjects.map(obj => ({
-                            obj: obj,
-                            dx: obj.x - firstObj.x,
-                            dy: obj.y - firstObj.y
-                        }));
-
-                        // Lägg till punkter med bevarad formation
-                        offsets.forEach(({ obj, dx, dy }) => {
-                            obj.path.push({ x: x + dx, y: y + dy });
-                        });
-                    } else {
-                        // Alla får samma punkt
-                        selectedObjects.forEach(selObj => {
-                            selObj.path.push({ x: x, y: y });
-                        });
-                    }
-
-                    updateAnimationDuration();
-                    document.getElementById('playBtn').disabled = false;
-                    document.getElementById('saveVideoBtn').disabled = false;
-
-                    // Force immediate render to show the new path segment
-                    requestAnimationFrame(() => render());
-                }
-            } else if (currentMode === 'draw') {
-                // Start drawing shape
-                // Start drawing shape
-                isDragging = true;
-                isDrawing = true;
-                dragStartX = x;
-                dragStartY = y;
-
-                // Create temp object
-                currentDrawingObject = {
-                    id: Date.now(),
-                    type: currentDrawMode,
-                    x: x,
-                    y: y,
-                    width: 0,
-                    height: 0,
-                    endX: x,
-                    endY: y,
-                    color: '#333333', // Default color
-                    rotation: 0,
-                    path: [],
-                    startX: x,
-                    startY: y
-                };
-            }
-
-            updateClearPathButton();
-            updateRotationControl();
-            render();
-        });
+                                updateClearPathButton();
+                                updateRotationControl();
+                                render();
+                            });
 
         canvas.addEventListener('mousemove', (e) => {
             const coords = getCanvasCoordinates(e);
             const x = coords.x;
             const y = coords.y;
 
-            if (currentMode === 'move' && isDragging && selectedObjects.length > 0) {
-                if (keepFormation && selectedObjects.length > 1) {
-                    // Behåll formation: alla objekt behåller sina relativa positioner
-                    const firstObj = selectedObjects[0];
-                    const newX = x - dragStartX;
-                    const newY = y - dragStartY;
-                    const deltaX = newX - firstObj.x;
-                    const deltaY = newY - firstObj.y;
-
+            if (currentMode === 'move') {
+                if (isDragging && selectedObjects.length > 0) {
+                    // Move ALL selected objects
                     selectedObjects.forEach(obj => {
-                        obj.x += deltaX;
-                        obj.y += deltaY;
+                        obj.x = x - obj.dragOffsetX;
+                        obj.y = y - obj.dragOffsetY;
+                        // Update start positions for animation reset
                         obj.startX = obj.x;
                         obj.startY = obj.y;
                     });
-                } else {
-                    // Flytta bara det första objektet
-                    selectedObjects[0].x = x - dragStartX;
-                    selectedObjects[0].y = y - dragStartY;
-                    selectedObjects[0].startX = selectedObjects[0].x;
-                    selectedObjects[0].startY = selectedObjects[0].y;
+                    render();
+                } else if (selectionBox.active) {
+                    // Update Selection Box
+                    selectionBox.currentX = x;
+                    selectionBox.currentY = y;
+                    render();
                 }
-
-                render();
             } else if (currentMode === 'draw' && isDragging && currentDrawingObject) {
                 currentDrawingObject.endX = x;
                 currentDrawingObject.endY = y;
@@ -1694,7 +1709,30 @@
                 objects.push(currentDrawingObject);
                 currentDrawingObject = null;
             }
+
+            if (selectionBox.active) {
+                // Finalize Selection Box
+                const x1 = Math.min(selectionBox.startX, selectionBox.currentX);
+                const x2 = Math.max(selectionBox.startX, selectionBox.currentX);
+                const y1 = Math.min(selectionBox.startY, selectionBox.currentY);
+                const y2 = Math.max(selectionBox.startY, selectionBox.currentY);
+
+                // Find objects inside box
+                objects.forEach(obj => {
+                    // Simple center point check for now
+                    if (obj.x >= x1 && obj.x <= x2 && obj.y >= y1 && obj.y <= y2) {
+                        if (!selectedObjects.includes(obj)) {
+                            selectedObjects.push(obj);
+                        }
+                    }
+                });
+
+                selectionBox.active = false;
+                render();
+            }
+
             isDragging = false;
+            isDrawing = false;
             render();
         });
 
