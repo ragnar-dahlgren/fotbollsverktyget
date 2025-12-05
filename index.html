@@ -1582,96 +1582,102 @@
                             // For lines/arrows, we might need better hit detection
                             if (o.type === 'line' || o.type === 'arrow') {
                                 // Simple proximity check to line segment
-                                // ... (omitted for brevity, using bounding box for now)
                                 if (x >= Math.min(o.x, o.endX) - 10 && x <= Math.max(o.x, o.endX) + 10 &&
                                     y >= Math.min(o.y, o.endY) - 10 && y <= Math.max(o.y, o.endY) + 10) {
                                     obj = o;
-                                    if (obj) {
-                                        // Remove object
-                                        const index = objects.indexOf(obj);
-                                        if (index > -1) {
-                                            objects.splice(index, 1);
-                                            // Also remove from selection if present
-                                            const selIndex = selectedObjects.indexOf(obj);
-                                            if (selIndex > -1) {
-                                                selectedObjects.splice(selIndex, 1);
-                                            }
-                                            render(); // Force render
-                                        }
-                                    }
-                                } else if (currentMode === 'path') {
-                                    const obj = getObjectAt(x, y);
-                                    if (obj) {
-                                        if (e.ctrlKey || e.metaKey) {
-                                            const index = selectedObjects.indexOf(obj);
-                                            if (index > -1) {
-                                                selectedObjects.splice(index, 1);
-                                            } else {
-                                                selectedObjects.push(obj);
-                                            }
-                                        } else {
-                                            if (!selectedObjects.includes(obj)) {
-                                                selectedObjects = [obj];
-                                            }
-                                        }
-                                    } else if (selectedObjects.length > 0) {
-                                        // Lägg till punkt i alla valda objekts banor
-                                        if (keepFormation && selectedObjects.length > 1) {
-                                            // Beräkna relativa positioner
-                                            const firstObj = selectedObjects[0];
-                                            const offsets = selectedObjects.map(obj => ({
-                                                obj: obj,
-                                                dx: obj.x - firstObj.x,
-                                                dy: obj.y - firstObj.y
-                                            }));
-
-                                            // Lägg till punkter med bevarad formation
-                                            offsets.forEach(({ obj, dx, dy }) => {
-                                                obj.path.push({ x: x + dx, y: y + dy });
-                                            });
-                                        } else {
-                                            // Alla får samma punkt
-                                            selectedObjects.forEach(selObj => {
-                                                selObj.path.push({ x: x, y: y });
-                                            });
-                                        }
-
-                                        updateAnimationDuration();
-                                        document.getElementById('playBtn').disabled = false;
-                                        document.getElementById('saveVideoBtn').disabled = false;
-
-                                        // Force immediate render to show the new path segment
-                                        requestAnimationFrame(() => render());
-                                    }
-                                } else if (currentMode === 'draw') {
-                                    // Start drawing shape
-                                    isDragging = true;
-                                    isDrawing = true;
-                                    dragStartX = x;
-                                    dragStartY = y;
-
-                                    // Create temp object
-                                    currentDrawingObject = {
-                                        id: Date.now(),
-                                        type: currentDrawMode,
-                                        x: x,
-                                        y: y,
-                                        width: 0,
-                                        height: 0,
-                                        endX: x,
-                                        endY: y,
-                                        color: '#333333', // Default color
-                                        rotation: 0,
-                                        path: [],
-                                        startX: x,
-                                        startY: y
-                                    };
+                                    break;
                                 }
+                            }
+                        }
+                    }
+                }
 
-                                updateClearPathButton();
-                                updateRotationControl();
-                                render();
-                            });
+                if (obj) {
+                    // Remove object
+                    const index = objects.indexOf(obj);
+                    if (index > -1) {
+                        objects.splice(index, 1);
+                        // Also remove from selection if present
+                        const selIndex = selectedObjects.indexOf(obj);
+                        if (selIndex > -1) {
+                            selectedObjects.splice(selIndex, 1);
+                        }
+                        render(); // Force render
+                    }
+                }
+            } else if (currentMode === 'path') {
+                const obj = getObjectAt(x, y);
+                if (obj) {
+                    if (e.ctrlKey || e.metaKey) {
+                        const index = selectedObjects.indexOf(obj);
+                        if (index > -1) {
+                            selectedObjects.splice(index, 1);
+                        } else {
+                            selectedObjects.push(obj);
+                        }
+                    } else {
+                        if (!selectedObjects.includes(obj)) {
+                            selectedObjects = [obj];
+                        }
+                    }
+                } else if (selectedObjects.length > 0) {
+                    // Lägg till punkt i alla valda objekts banor
+                    if (keepFormation && selectedObjects.length > 1) {
+                        // Beräkna relativa positioner
+                        const firstObj = selectedObjects[0];
+                        const offsets = selectedObjects.map(obj => ({
+                            obj: obj,
+                            dx: obj.x - firstObj.x,
+                            dy: obj.y - firstObj.y
+                        }));
+
+                        // Lägg till punkter med bevarad formation
+                        offsets.forEach(({ obj, dx, dy }) => {
+                            obj.path.push({ x: x + dx, y: y + dy });
+                        });
+                    } else {
+                        // Alla får samma punkt
+                        selectedObjects.forEach(selObj => {
+                            selObj.path.push({ x: x, y: y });
+                        });
+                    }
+
+                    updateAnimationDuration();
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('saveVideoBtn').disabled = false;
+
+                    // Force immediate render to show the new path segment
+                    requestAnimationFrame(() => render());
+                }
+            } else if (currentMode === 'draw') {
+                // Start drawing shape
+                isDragging = true;
+                isDrawing = true;
+                dragStartX = x;
+                dragStartY = y;
+
+                // Create temp object
+                currentDrawingObject = {
+                    id: Date.now(),
+                    type: currentDrawMode,
+                    x: x,
+                    y: y,
+                    width: 0,
+                    height: 0,
+                    endX: x,
+                    endY: y,
+                    color: '#333333', // Default color
+                    rotation: 0,
+                    path: [],
+                    startX: x,
+                    startY: y
+                };
+            }
+
+            updateClearPathButton();
+            updateRotationControl();
+            render();
+        });
 
         canvas.addEventListener('mousemove', (e) => {
             const coords = getCanvasCoordinates(e);
