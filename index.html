@@ -1324,6 +1324,16 @@
             ctx.restore();
         }
 
+        function setLineStyle(ctx) {
+            if (currentPathStyle === 'dashed') {
+                ctx.setLineDash([10, 5]);
+            } else if (currentPathStyle === 'dotted') {
+                ctx.setLineDash([2, 4]);
+            } else {
+                ctx.setLineDash([]);
+            }
+        }
+
         // Rita objekt
         function drawObject(obj, hideSelection = false, mode = 'full') {
             ctx.save();
