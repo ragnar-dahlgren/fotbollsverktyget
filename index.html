@@ -1144,143 +1144,70 @@
             ctx.moveTo(x + r, y);
             ctx.arcTo(x + w, y, x + w, y + h, r);
             ctx.arcTo(x + w, y + h, x, y + h, r);
-            ctx.arcTo(x, y + h, x, y, r);
-            ctx.arcTo(x, y, x + w, y, r);
-            ctx.closePath();
-        }
-
-        function drawSelectionHighlight(ctx, x, y) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.scale(2.0, 2.0);
-            ctx.fillStyle = COLORS.selected;
-            ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
         }
 
-        // G6 (Cone)
-        function drawCone(ctx, x, y, config) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.scale(2.0, 2.0);
+        ctx.fillStyle = V2_COLORS.skin;
+        ctx.beginPath(); ctx.arc(0, -10, 3.5, 0, Math.PI * 2); ctx.fill();
 
-            const h = config.height || 7;
-            const topY = -h / 2;
-            const baseY = h / 2;
-            const topW = config.topW || 6;
-            const baseW = config.baseW || 14;
+        ctx.fillStyle = config.jersey;
+        let armW = 1.5; let armH = 4; const armX = 5; const armY = -5;
+        if (config.arms === 'long') armH = 9;
+        ctx.fillRect(-armX - armW, armY, armW, armH);
+        ctx.fillRect(armX, armY, armW, armH);
 
-            // Fyllning
-            ctx.fillStyle = config.color;
-            ctx.beginPath();
-            ctx.moveTo(-topW / 2, topY);
-            ctx.ellipse(0, topY, topW / 2, 1.5, 0, Math.PI, 0);
-            ctx.lineTo(baseW / 2, baseY);
-            ctx.ellipse(0, baseY, baseW / 2, 2.5, 0, 0, Math.PI);
-            ctx.lineTo(-baseW / 2, baseY);
-            ctx.closePath();
-            ctx.fill();
-
-            // Topp-highlight
-            ctx.fillStyle = "rgba(255,255,255,0.2)";
-            ctx.beginPath(); ctx.ellipse(0, topY, topW / 2, 1.5, 0, 0, Math.PI * 2); ctx.fill();
-
-            // Hål
-            ctx.fillStyle = config.holeColor || "black";
-            ctx.beginPath(); ctx.ellipse(0, topY, (topW / 2) * 0.6, 1.5 * 0.6, 0, 0, Math.PI * 2); ctx.fill();
-
-            // Kontur
-            ctx.strokeStyle = config.strokeColor || "black";
-            ctx.lineWidth = 0.5;
-            ctx.beginPath();
-            ctx.moveTo(-topW / 2, topY);
-            ctx.lineTo(-baseW / 2, baseY);
-            ctx.ellipse(0, baseY, baseW / 2, 2.5, 0, Math.PI, 0, true);
-            ctx.lineTo(topW / 2, topY);
-            ctx.ellipse(0, topY, topW / 2, 1.5, 0, 0, Math.PI, true);
-            ctx.stroke();
-            ctx.restore();
+        if (config.arms !== 'long') {
+            ctx.fillStyle = V2_COLORS.skin;
+            ctx.fillRect(-armX - armW, armY + armH, armW, 5);
+            ctx.fillRect(armX, armY + armH, armW, 5);
         }
 
-        // A1 (Player)
-        function drawPlayer(ctx, x, y, config) {
-            ctx.save();
-            try {
-                ctx.translate(x, y);
-                ctx.scale(2.0, 2.0);
+        if (config.gloves) {
+            ctx.fillStyle = "#ffffff";
+            const gloveSize = 2.0;
+            const gY = armY + armH + (config.arms === 'long' ? 0 : 5);
+            ctx.beginPath(); ctx.arc(-armX - armW / 2, gY, gloveSize, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(armX + armW / 2, gY, gloveSize, 0, Math.PI * 2); ctx.fill();
+        }
 
-                if (config.shadow === 'hard') {
-                    ctx.save(); ctx.translate(2, 2); ctx.fillStyle = "rgba(0,0,0,0.2)";
-                    roundRect(ctx, -4, -6, 8, 12, 1.5); ctx.fill();
-                    ctx.beginPath(); ctx.arc(0, -10, 3.5, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillRect(-6.5, -5, 1.5, 4); ctx.fillRect(5, -5, 1.5, 4);
-                    ctx.fillRect(-3.5, 6, 3, 10); ctx.fillRect(0.5, 6, 3, 10);
-                    ctx.restore();
-                }
+        const legY = 6; const shortsH = 5;
+        ctx.fillStyle = V2_COLORS.shorts;
+        ctx.fillRect(-3.5, legY, 3, shortsH);
+        ctx.fillRect(0.5, legY, 3, shortsH);
 
-                const bodyY = -6; const bodyW = 8; const bodyH = 12;
-                ctx.fillStyle = config.jersey;
-                roundRect(ctx, -bodyW / 2, bodyY, bodyW, bodyH, 1.5); ctx.fill();
+        ctx.fillStyle = config.socks;
+        ctx.fillRect(-3.5, legY + shortsH, 3, 5);
+        ctx.fillRect(0.5, legY + shortsH, 3, 5);
 
-                ctx.fillStyle = COLORS.skin;
-                ctx.beginPath(); ctx.arc(0, -10, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = config.shoes || "#1a1a1a";
+        const shoeY = legY + shortsH + 5;
+        ctx.beginPath(); ctx.moveTo(-3.5, shoeY); ctx.lineTo(-0.5, shoeY); ctx.lineTo(-0.5, shoeY + 2);
+        ctx.quadraticCurveTo(-2, shoeY + 3, -3.5, shoeY + 2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0.5, shoeY); ctx.lineTo(3.5, shoeY); ctx.lineTo(3.5, shoeY + 2);
+        ctx.quadraticCurveTo(2, shoeY + 3, 0.5, shoeY + 2); ctx.fill();
 
-                ctx.fillStyle = config.jersey;
-                let armW = 1.5; let armH = 4; const armX = 5; const armY = -5;
-                if (config.arms === 'long') armH = 9;
-                ctx.fillRect(-armX - armW, armY, armW, armH);
-                ctx.fillRect(armX, armY, armW, armH);
-
-                if (config.arms !== 'long') {
-                    ctx.fillStyle = COLORS.skin;
-                    ctx.fillRect(-armX - armW, armY + armH, armW, 5);
-                    ctx.fillRect(armX, armY + armH, armW, 5);
-                }
-
-                if (config.gloves) {
-                    ctx.fillStyle = "#ffffff";
-                    const gloveSize = 2.0;
-                    const gY = armY + armH + (config.arms === 'long' ? 0 : 5);
-                    ctx.beginPath(); ctx.arc(-armX - armW / 2, gY, gloveSize, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(armX + armW / 2, gY, gloveSize, 0, Math.PI * 2); ctx.fill();
-                }
-
-                const legY = 6; const shortsH = 5;
-                ctx.fillStyle = COLORS.shorts;
-                ctx.fillRect(-3.5, legY, 3, shortsH);
-                ctx.fillRect(0.5, legY, 3, shortsH);
-
-                ctx.fillStyle = config.socks;
-                ctx.fillRect(-3.5, legY + shortsH, 3, 5);
-                ctx.fillRect(0.5, legY + shortsH, 3, 5);
-
-                ctx.fillStyle = config.shoes || "#1a1a1a";
-                const shoeY = legY + shortsH + 5;
-                ctx.beginPath(); ctx.moveTo(-3.5, shoeY); ctx.lineTo(-0.5, shoeY); ctx.lineTo(-0.5, shoeY + 2);
-                ctx.quadraticCurveTo(-2, shoeY + 3, -3.5, shoeY + 2); ctx.fill();
-                ctx.beginPath(); ctx.moveTo(0.5, shoeY); ctx.lineTo(3.5, shoeY); ctx.lineTo(3.5, shoeY + 2);
-                ctx.quadraticCurveTo(2, shoeY + 3, 0.5, shoeY + 2); ctx.fill();
-
-                if (config.number) {
-                    ctx.fillStyle = COLORS.number;
-                    ctx.font = "bold 6px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                    ctx.fillText(config.jerseyNum || 0, 0, -1);
-                }
+        if (config.number) {
+            ctx.fillStyle = V2_COLORS.number;
+            ctx.font = "bold 6px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(config.jerseyNum || 0, 0, -1);
+        }
             } finally { ctx.restore(); }
         }
 
         // C2 (Coach)
-        function drawCoach(ctx, x, y, config) {
-            ctx.save(); ctx.translate(x, y); ctx.scale(2.0, 2.0);
-            ctx.fillStyle = config.color; roundRect(ctx, -5, -6, 10, 12, 1.5); ctx.fill();
-            ctx.fillStyle = COLORS.skin; ctx.beginPath(); ctx.arc(0, -10, 3.5, 0, Math.PI * 2); ctx.fill();
+        function drawNewCoach(ctx, x, y, config) {
+            ctx.save(); ctx.translate(x, y);
+            ctx.scale(1.8, 1.8);
+            ctx.fillStyle = config.color; v2RoundRect(ctx, -5, -6, 10, 12, 1.5); ctx.fill();
+            ctx.fillStyle = V2_COLORS.skin; ctx.beginPath(); ctx.arc(0, -10, 3.5, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = config.pants || '#2c3e50'; ctx.fillRect(-4, 6, 3.5, 10); ctx.fillRect(0.5, 6, 3.5, 10);
             ctx.restore();
         }
 
         // E1 (Ball)
-        function drawBall(ctx, x, y) {
-            ctx.save(); ctx.translate(x, y); ctx.scale(3.0, 3.0);
+        function drawNewBall(ctx, x, y) {
+            ctx.save(); ctx.translate(x, y);
+            ctx.scale(2.55, 2.55);
             ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.beginPath(); ctx.arc(1, 1, 3.5, 0, Math.PI * 2); ctx.fill();
             const grad = ctx.createRadialGradient(-1, -1, 0, 0, 0, 4);
             grad.addColorStop(0, "rgba(255,255,255,0.8)"); grad.addColorStop(1, "rgba(0,0,0,0.1)");
@@ -1291,8 +1218,9 @@
         }
 
         // D4 (Goal)
-        function drawGoal(ctx, x, y, config) {
-            ctx.save(); ctx.translate(x, y); ctx.scale(2.0, 2.0);
+        function drawNewGoal(ctx, x, y, config) {
+            ctx.save(); ctx.translate(x, y);
+            ctx.scale(3.6, 3.6); // Scale +20% more (3.0 * 1.2 = 3.6)
             const w = 30; const h_top = 10; const depth = 10;
             const topY = -h_top; const bottomY = 0; const backOffset = -depth;
             const bx1 = -w / 2; const bx2 = w / 2; const by1 = topY + backOffset; const by2 = bottomY + backOffset;
@@ -1314,7 +1242,8 @@
         }
 
         // Rita objekt
-        function drawObject(obj, hideSelection = false) {
+        // mode: 'full' (default), 'path', 'body'
+        function drawObject(obj, hideSelection = false, mode = 'full') {
             ctx.save();
 
             // Apply rotation if exists
@@ -1324,18 +1253,24 @@
                 ctx.translate(-obj.x, -obj.y);
             }
 
-            // Rita bana först (under objektet)
-            if (obj.path && obj.path.length > 0) {
-                drawPath(obj);
+            // --- PATH PASS ---
+            if (mode === 'full' || mode === 'path') {
+                if (obj.path && obj.path.length > 0) {
+                    drawPath(obj);
+                }
+                if (mode === 'path') {
+                    ctx.restore();
+                    return; // Done
+                }
             }
+
+            // --- BODY PASS ---
 
             // Rita markering
             if (!hideSelection && selectedObjects.includes(obj)) {
-                // För vanliga objekt (inte primitiva former) kör vi nya markeringen
                 if (!['rect', 'circle', 'triangle', 'line', 'arrow'].includes(obj.type)) {
-                    drawSelectionHighlight(ctx, obj.x, obj.y);
+                    drawV2Selection(ctx, obj.x, obj.y);
                 } else {
-                    // Legacy selection
                     ctx.strokeStyle = '#ffd93d';
                     ctx.lineWidth = 4;
                     ctx.strokeRect(obj.x - obj.size / 2 - 5, obj.y - obj.size / 2 - 5, obj.size + 10, obj.size + 10);
@@ -1343,14 +1278,32 @@
             }
 
             // --- RENDER LOGIC ---
-            if (obj.type === 'player') {
+            if (obj.type === 'gk') {
+                const config = {
+                    jersey: '#2ecc71', // Standard Green GK (could use obj.color if defined)
+                    socks: '#2ecc71',
+                    arms: 'long',
+                    gloves: true,
+                    shadow: 'hard'
+                };
+                if (obj.color && obj.color !== '#2ecc71') { config.jersey = obj.color; config.socks = obj.color; }
+                drawNewPlayer(ctx, obj.x, obj.y, config);
+            } else if (obj.type === 'player') {
                 const config = {
                     jersey: obj.color,
                     socks: obj.color,
                     arms: 'xslim',
-                    shadow: 'hard'
+                    shadow: 'hard',
+                    striped: false
                 };
-                drawPlayer(ctx, obj.x, obj.y, config);
+
+                // A3 Logic: Black or Gold = Striped
+                const c = (obj.color || '').toLowerCase();
+                if (c === '#000000' || c === '#c39956') {
+                    config.striped = true;
+                }
+
+                drawNewPlayer(ctx, obj.x, obj.y, config);
             } else if (obj.type === 'cone') {
                 const config = {
                     color: obj.color,
@@ -1358,19 +1311,20 @@
                     holeColor: "black",
                     height: 7, topW: 6, baseW: 14
                 };
-                drawCone(ctx, obj.x, obj.y, config);
+                drawNewCone(ctx, obj.x, obj.y, config);
             } else if (obj.type === 'ball') {
-                drawBall(ctx, obj.x, obj.y);
+                drawNewBall(ctx, obj.x, obj.y);
             } else if (obj.type === 'coach') {
-                drawCoach(ctx, obj.x, obj.y, { color: '#2c3e50', pants: '#bdc3c7' });
+                let config = { color: '#2c3e50', pants: '#bdc3c7' }; // Default (Coach S)
+                const c = (obj.color || '').toLowerCase();
+                if (c === '#ecf0f1' || c === 'white' || c === '#ffffff') {
+                    config = { color: '#ecf0f1', pants: '#2c3e50' };
+                }
+                drawNewCoach(ctx, obj.x, obj.y, config);
             } else if (obj.type === 'goal') {
-                drawGoal(ctx, obj.x, obj.y, { netAlpha: 0.2 });
+                drawNewGoal(ctx, obj.x, obj.y, { netAlpha: 0.2 });
             } else {
-                // PRIMITIVE SHAPES (RECT, CIRCLE, LINE, etc)
-                // Use legacy primitives logic (which is simpler to inline or keep)
-                // ... Actually, the original "else" block contained both legacy "cone"/"coach" paths AND the primitive shapes.
-                // We must keeping the primitive shapes logic!
-
+                // PRIMITIVE SHAPES
                 switch (obj.type) {
                     case 'rect':
                         ctx.strokeStyle = obj.color || '#333';
@@ -1379,7 +1333,6 @@
                         ctx.strokeRect(obj.x, obj.y, obj.width, obj.height);
                         ctx.setLineDash([]);
                         break;
-
                     case 'circle':
                         ctx.strokeStyle = obj.color || '#333';
                         ctx.lineWidth = 2;
@@ -1390,7 +1343,6 @@
                         ctx.stroke();
                         ctx.setLineDash([]);
                         break;
-
                     case 'triangle':
                         ctx.strokeStyle = obj.color || '#333';
                         ctx.lineWidth = 2;
@@ -1403,7 +1355,6 @@
                         ctx.stroke();
                         ctx.setLineDash([]);
                         break;
-
                     case 'line':
                         ctx.strokeStyle = obj.color || '#333';
                         ctx.lineWidth = 2;
@@ -1414,7 +1365,6 @@
                         ctx.stroke();
                         ctx.setLineDash([]);
                         break;
-
                     case 'arrow':
                         ctx.strokeStyle = obj.color || '#333';
                         ctx.fillStyle = obj.color || '#333';
@@ -1424,7 +1374,6 @@
                         ctx.moveTo(obj.x, obj.y);
                         ctx.lineTo(obj.endX, obj.endY);
                         ctx.stroke();
-
                         const angle = Math.atan2(obj.endY - obj.y, obj.endX - obj.x);
                         const headLen = 15;
                         ctx.beginPath();
@@ -1437,51 +1386,29 @@
                         break;
                 }
             }
-
-            ctx.restore();
-        }
-        // Cacha SVG-bilder
-        const playerImages = {};
-
-        function getPlayerImage(color, isCoach = false) {
-            const cacheKey = color + (isCoach ? '_coach' : '');
-            if (playerImages[cacheKey]) return playerImages[cacheKey];
-
-            const skinColor = "#f0d5b9";
-            const shortsColor = isCoach ? "#000000" : "#ffffff"; // Svarta shorts för tränare, vita för spelare
-            const hairColor = "#8d5524"; // Brunt hår
-            const eyeColor = "#63a4ff"; // Blå ögon
-            const kitColor = isCoach ? "#000000" : color; // Svart tröja/strumpor för tränare
-
-            // Detaljerad spelare: Huvud, Hår, Ansikte, Tröja, Shorts, Strumpor, Skor
-            const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <!-- Head -->
-                <circle cx="12" cy="4" r="2.5" fill="${skinColor}" />
-                
-                <!-- Hair -->
                 <path d="M9.5,2 C10.5,1.5 13.5,1.5 14.5,2 C15.5,2.5 15,4 15,4 C15,4 14,3 12,3 C10,3 9,4 9,4 C9,4 8.5,2.5 9.5,2 Z" fill="${hairColor}" />
                 
                 <!-- Eyes -->
                 <circle cx="11.2" cy="3.8" r="0.4" fill="${eyeColor}" />
                 <circle cx="12.8" cy="3.8" r="0.4" fill="${eyeColor}" />
                 
-                <!-- Mouth -->
+                <!--Mouth -->
                 <path d="M11.5,5 Q12,5.3 12.5,5" stroke="#8a6c50" stroke-width="0.3" fill="none" />
                 
-                <!-- Jersey -->
+                <!--Jersey -->
                 <path d="M8,7 L16,7 L16,9 L18,9 L18,11 L16,11 L16,15 L8,15 L8,11 L6,11 L6,9 L8,9 Z" fill="${kitColor}" />
                 
-                <!-- Shorts -->
+                <!--Shorts -->
                 <path d="M8,15 L16,15 L16,18 L12.5,18 L12.5,16 L11.5,16 L11.5,18 L8,18 Z" fill="${shortsColor}" />
                 
-                <!-- Socks -->
+                <!--Socks -->
                 <path d="M8.5,18 L11,18 L11,22 L8.5,22 Z" fill="${kitColor}" />
                 <path d="M13,18 L15.5,18 L15.5,22 L13,22 Z" fill="${kitColor}" />
                 
-                <!-- Shoes -->
+                <!--Shoes -->
                 <path d="M8,22 L11,22 L11,23 L8,23 Z" fill="#000" />
                 <path d="M13,22 L16,22 L16,23 L13,23 Z" fill="#000" />
-            </svg>`;
+            </svg > `;
 
             const img = new Image();
             img.src = 'data:image/svg+xml;base64,' + btoa(svgString);
@@ -2684,7 +2611,7 @@
             // Format time as MM:SS
             const minutes = Math.floor(current / 60).toString().padStart(2, '0');
             const seconds = Math.floor(current % 60).toString().padStart(2, '0');
-            timeDisplay.textContent = `${minutes}:${seconds}`;
+            timeDisplay.textContent = `${ minutes }:${ seconds }`;
         }
 
         function seekTimeline(e) {
