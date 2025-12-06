@@ -1550,6 +1550,7 @@
         }
 
         // Hitta objekt vid position
+        // Hitta objekt vid position
         function getObjectAt(x, y) {
             // Pass 1: Check for entities (players, balls, etc.) - Priority!
             for (let i = objects.length - 1; i >= 0; i--) {
@@ -1566,18 +1567,34 @@
             // Pass 2: Check for shapes (background)
             for (let i = objects.length - 1; i >= 0; i--) {
                 const obj = objects[i];
-                if (['rect', 'circle', 'triangle', 'line', 'arrow'].includes(obj.type)) {
-                    // Simple bounding box check for shapes
-                    if (x >= obj.x && x <= obj.x + obj.width && y >= obj.y && y <= obj.y + obj.height) {
+                // Shapes
+                if (['rect', 'circle', 'triangle'].includes(obj.type)) {
+                    const x1 = Math.min(obj.x, obj.x + obj.width);
+                    const x2 = Math.max(obj.x, obj.x + obj.width);
+                    const y1 = Math.min(obj.y, obj.y + obj.height);
+                    const y2 = Math.max(obj.y, obj.y + obj.height);
+
+                    if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
                         return obj;
                     }
-                    // For lines/arrows, simple proximity check
-                    if (obj.type === 'line' || obj.type === 'arrow') {
-                        if (x >= Math.min(obj.x, obj.endX) - 10 && x <= Math.max(obj.x, obj.endX) + 10 &&
-                            y >= Math.min(obj.y, obj.endY) - 10 && y <= Math.max(obj.y, obj.endY) + 10) {
-                            return obj;
-                        }
-                    }
+                }
+                // Lines / Arrows
+                else if (obj.type === 'line' || obj.type === 'arrow') {
+                    // Distance from point (x,y) to line segment (obj.x,obj.y) -> (obj.endX, obj.endY)
+                    const A = { x: obj.x, y: obj.y };
+                    const B = { x: obj.endX, y: obj.endY };
+                    const P = { x: x, y: y };
+
+                    const len2 = (B.x - A.x) ** 2 + (B.y - A.y) ** 2;
+                    if (len2 === 0) return (Math.sqrt((P.x - A.x) ** 2 + (P.y - A.y) ** 2) < 10) ? obj : null;
+
+                    let t = ((P.x - A.x) * (B.x - A.x) + (P.y - A.y) * (B.y - A.y)) / len2;
+                    t = Math.max(0, Math.min(1, t));
+
+                    const proj = { x: A.x + t * (B.x - A.x), y: A.y + t * (B.y - A.y) };
+                    const d = Math.sqrt((P.x - proj.x) ** 2 + (P.y - proj.y) ** 2);
+
+                    if (d < 10) return obj; // Hit threshold 10px
                 }
             }
 
@@ -1690,31 +1707,6 @@
             } else if (currentMode === 'eraser') {
                 // Check for objects (players, balls, etc.)
                 let obj = getObjectAt(x, y);
-
-                // If no object found, check for drawn shapes
-                if (!obj) {
-                    // Iterate in reverse to find top-most shape
-                    for (let i = objects.length - 1; i >= 0; i--) {
-                        const o = objects[i];
-                        if (['rect', 'circle', 'triangle', 'line', 'arrow'].includes(o.type)) {
-                            // Simple bounding box check for shapes for now
-                            // Ideally we'd have precise hit detection per shape
-                            if (x >= o.x && x <= o.x + o.width && y >= o.y && y <= o.y + o.height) {
-                                obj = o;
-                                break;
-                            }
-                            // For lines/arrows, we might need better hit detection
-                            if (o.type === 'line' || o.type === 'arrow') {
-                                // Simple proximity check to line segment
-                                if (x >= Math.min(o.x, o.endX) - 10 && x <= Math.max(o.x, o.endX) + 10 &&
-                                    y >= Math.min(o.y, o.endY) - 10 && y <= Math.max(o.y, o.endY) + 10) {
-                                    obj = o;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
 
                 if (obj) {
                     // Remove object
