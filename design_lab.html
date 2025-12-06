@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Design Labb - Realistiska Spelare</title>
+    <title>Design Labb - FINAL SPECIFICATION</title>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -17,6 +17,7 @@
 
         h1 {
             color: #333;
+            margin-bottom: 10px;
         }
 
         .canvas-container {
@@ -37,211 +38,474 @@
             background: white;
             padding: 20px;
             border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
             width: 100%;
-            max-width: 600px;
+            max-width: 1000px;
         }
 
-        .control-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        label {
-            font-weight: bold;
-            color: #555;
-        }
-
-        input[type="color"] {
-            border: none;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            background: #333;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .btn:hover {
-            background: #555;
+        code {
+            background: #eee;
+            padding: 2px 4px;
+            border-radius: 3px;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Design Labb: Realistiska Spelare 👕</h1>
-    <p>Testar top-down vy med tröja, shorts och strumpor.</p>
+    <h1>Design Labb: SLUTGILTIG SPECIFIKATION 🏆</h1>
+    <p>Alla godkända objekt (A1, A2, A3, B1, C1, C2, D4, E1, G6) med och utan markering.</p>
 
     <div class="canvas-container">
-        <canvas id="labCanvas" width="600" height="400"></canvas>
+        <canvas id="labCanvas" width="800" height="1000"></canvas>
     </div>
 
     <div class="controls">
-        <div class="control-group">
-            <label>Tröjfärg (Lag 1)</label>
-            <input type="color" id="jerseyColor1" value="#e74c3c" onchange="render()">
-        </div>
-        <div class="control-group">
-            <label>Shortsfärg</label>
-            <input type="color" id="shortsColor" value="#ffffff" onchange="render()">
-        </div>
-        <div class="control-group">
-            <label>Strumpor</label>
-            <input type="color" id="socksColor" value="#e74c3c" onchange="render()">
-        </div>
-        <div class="control-group">
-            <label>Hudfärg</label>
-            <input type="color" id="skinColor" value="#ffdbac" onchange="render()">
-        </div>
-        <div style="border-top: 1px solid #eee; margin: 10px 0;"></div>
-        <div class="control-group">
-            <button class="btn" onclick="render()">Uppdatera</button>
-        </div>
+        <h3>Redo för integration</h3>
+        <p>Denna fil innehåller nu de "rena" ritfunktionerna för varje objekt.</p>
+        <ul>
+            <li><code>drawSelection(ctx, x, y)</code> - Vit cirkel bakom markering.</li>
+            <li><code>drawPlayer(...)</code> - Hanterar A1 (Vanlig), A2 (Nummer), A3 (Kapten) och B1 (Målvakt).</li>
+            <li><code>drawCoach(...)</code> - Hanterar C1 och C2.</li>
+            <li><code>drawGoal(...)</code> - Hanterar D4.</li>
+            <li><code>drawBall(...)</code> - Hanterar E1.</li>
+            <li><code>drawCone(...)</code> - Hanterar G6.</li>
+        </ul>
     </div>
 
     <script>
         const canvas = document.getElementById('labCanvas');
         const ctx = canvas.getContext('2d');
 
+        // --- KONFIGURATION & FÄRGER ---
+        const COLORS = {
+            jersey: "#e74c3c",
+            shorts: "#ffffff",
+            socks: "#e74c3c",
+            skin: "#ffdbac",
+            shoes: "#1a1a1a",
+            number: "#ffffff",
+            selected: "rgba(255, 255, 255, 0.25)"
+        };
+
+        const CONE_COLORS = {
+            body: "#fbc531", // Orange-Gul mix
+            stroke: "black",
+            hole: "black"
+        };
+
+        // --- DEFINIERADE OBJEKT (A-G) ---
+        // Dessa konfigurationer kan kopieras direkt till verktyget
+        const finalItems = [
+            // SPELARE (A)
+            {
+                code: 'A1', label: 'Spelare', type: 'player',
+                config: { arms: 'xslim', shadow: 'hard', shoes: 'black', pattern: 'none', number: false }
+            },
+
+            {
+                code: 'A2', label: 'Spelare #', type: 'player',
+                config: { arms: 'xslim', shadow: 'hard', shoes: 'black', pattern: 'none', number: true, jerseyNum: 2 }
+            },
+
+            {
+                code: 'A3', label: 'Kapten', type: 'player',
+                config: { arms: 'xslim', shadow: 'hard', shoes: 'black', pattern: 'stripe', number: false }
+            },
+
+            // MÅLVAKT (B1)
+            {
+                code: 'B1', label: 'Målvakt', type: 'gk',
+                config: { arms: 'long', shadow: 'hard', shoes: 'black', jersey: '#2ecc71', socks: '#2ecc71', gloves: 'small', number: true, jerseyNum: 1 }
+            },
+
+            // TRÄNARE (C)
+            {
+                code: 'C1', label: 'Tränare V', type: 'coach',
+                config: { style: 'polo', color: '#ecf0f1', pants: '#2c3e50' }
+            },
+
+            {
+                code: 'C2', label: 'Tränare S', type: 'coach',
+                config: { style: 'polo', color: '#2c3e50', pants: '#bdc3c7' }
+            },
+
+            // MÅL (D4)
+            {
+                code: 'D4', label: 'Mål', type: 'goal',
+                config: { join: 'round', net: 'thin', netAlpha: 0.2 }
+            },
+
+            // BOLL (E1)
+            {
+                code: 'E1', label: 'Boll', type: 'ball',
+                config: { style: 'realistic' }
+            },
+
+            // KON (G6)
+            {
+                code: 'G6', label: 'Kon', type: 'cone',
+                config: { color: CONE_COLORS.body, strokeColor: CONE_COLORS.stroke, holeColor: CONE_COLORS.hole, baseW: 14, topW: 6, height: 7 }
+            }
+        ];
+
+        // --- RENDER LOOP ---
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPitchDetails(ctx); // Bakgrund
 
-            const jerseyColor1 = document.getElementById('jerseyColor1').value;
-            const shortsColor = document.getElementById('shortsColor').value;
-            const socksColor = document.getElementById('socksColor').value;
-            const skinColor = document.getElementById('skinColor').value;
+            let rowY = 80;
+            const col1X = 200; // Normal
+            const col2X = 500; // Selected
 
-            // Rita rutnät/gräs detaljer
-            drawPitchDetails(ctx);
+            // Rubriker
+            ctx.fillStyle = "white";
+            ctx.font = "bold 20px Inter, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("Normal", col1X, 40);
+            ctx.fillText("Markerad", col2X, 40);
 
-            // Rita spelare (Lag 1)
-            drawDetailedPlayer(ctx, 150, 200, jerseyColor1, shortsColor, socksColor, skinColor, "10");
-            drawDetailedPlayer(ctx, 250, 150, jerseyColor1, shortsColor, socksColor, skinColor, "7");
+            finalItems.forEach((item, index) => {
+                // Rita Normal
+                drawItemByType(ctx, col1X, rowY, item, false);
 
-            // Rita spelare (Lag 2 - Exempel)
-            drawDetailedPlayer(ctx, 450, 200, "#3498db", "#ffffff", "#3498db", skinColor, "9");
+                // Rita Selected
+                drawItemByType(ctx, col2X, rowY, item, true);
 
-            // Rita en markerad spelare
-            drawDetailedPlayer(ctx, 350, 250, jerseyColor1, shortsColor, socksColor, skinColor, "4", true);
+                // Etikett & Kod i mitten/vänster
+                ctx.fillStyle = "#eee";
+                ctx.font = "bold 14px Inter, sans-serif";
+                ctx.textAlign = "right";
+                ctx.fillText(item.code, col1X - 60, rowY + 5);
+                ctx.font = "12px Inter, sans-serif";
+                ctx.fillStyle = "#aaa";
+                ctx.fillText(item.label, col1X - 60, rowY + 20);
+
+                rowY += 100; // Avstånd mellan rader
+                if (item.type === 'goal') rowY += 40; // Extra plats för målet
+            });
+        }
+
+        function drawItemByType(ctx, x, y, item, isSelected) {
+            if (isSelected) {
+                drawSelection(ctx, x, y);
+            }
+
+            if (item.type === 'player' || item.type === 'gk') {
+                drawPlayer(ctx, x, y, item.config);
+            } else if (item.type === 'coach') {
+                drawCoach(ctx, x, y, item.config);
+            } else if (item.type === 'goal') {
+                drawGoal(ctx, x, y, item.config);
+            } else if (item.type === 'ball') {
+                drawBall(ctx, x, y, item.config.style);
+            } else if (item.type === 'cone') {
+                drawCone(ctx, x, y, item.config);
+            }
         }
 
         function drawPitchDetails(ctx) {
-            ctx.strokeStyle = "rgba(255,255,255,0.2)";
+            ctx.strokeStyle = "rgba(255,255,255,0.1)";
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(300, 200, 50, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(300, 0);
-            ctx.lineTo(300, 400);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(canvas.width / 2, 0); ctx.lineTo(canvas.width / 2, canvas.height); ctx.stroke();
+            ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, 80, 0, Math.PI * 2); ctx.stroke();
         }
 
-        function drawDetailedPlayer(ctx, x, y, jerseyColor, shortsColor, socksColor, skinColor, number, isSelected = false) {
-            const scale = 1.2; // Skala upp lite för tydlighet
+        // --- HELPER FUNCTIONS ---
+        function roundRect(ctx, x, y, w, h, r) {
+            if (w < 2 * r) r = w / 2;
+            if (h < 2 * r) r = h / 2;
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
 
+        // =========================================================
+        // ===            FINAL DRAWING FUNCTIONS                ===
+        // =========================================================
+
+        /**
+         * Ritar markeringscirkeln (används för alla objekt vid hover/selection)
+         */
+        function drawSelection(ctx, x, y) {
             ctx.save();
             ctx.translate(x, y);
+            const scale = 2.0;
+            ctx.scale(scale, scale);
+            ctx.fillStyle = COLORS.selected;
+            ctx.beginPath();
+            ctx.arc(0, 0, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /**
+         * Ritar Konen (G6 - The Chosen One)
+         */
+        function drawCone(ctx, x, y, config) {
+            ctx.save();
+            ctx.translate(x, y);
+            const scale = 2.0;
+            ctx.scale(scale, scale);
+
+            const h = config.height || 7;
+            const topY = -h / 2;
+            const baseY = h / 2;
+            const topW = config.topW || 6;
+            const baseW = config.baseW || 14;
+
+            // Huvudkropp (Fyllning)
+            ctx.fillStyle = config.color;
+            ctx.beginPath();
+            ctx.moveTo(-topW / 2, topY);
+            // Baksidan av toppen (ellipse) för korrekt fyllning
+            ctx.ellipse(0, topY, topW / 2, 1.5, 0, Math.PI, 0);
+            ctx.lineTo(baseW / 2, baseY);
+            // Bottenkurva
+            ctx.ellipse(0, baseY, baseW / 2, 2.5, 0, 0, Math.PI);
+            ctx.lineTo(-baseW / 2, baseY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Toppytan (Highlight)
+            ctx.fillStyle = "rgba(255,255,255,0.2)";
+            ctx.beginPath();
+            ctx.ellipse(0, topY, topW / 2, 1.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hålet i toppen (Svart)
+            ctx.fillStyle = config.holeColor || "black";
+            ctx.beginPath();
+            ctx.ellipse(0, topY, (topW / 2) * 0.6, 1.5 * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Konturer (Svart outline runt allt)
+            ctx.strokeStyle = config.strokeColor || "black";
+            ctx.lineWidth = config.strokeWidth || 0.5;
+
+            ctx.beginPath();
+            ctx.moveTo(-topW / 2, topY); // Start Top-Left
+            ctx.lineTo(-baseW / 2, baseY); // Down to Base-Left
+            // Base Curve (Left -> Right via Bottom)
+            ctx.ellipse(0, baseY, baseW / 2, 2.5, 0, Math.PI, 0, true);
+            ctx.lineTo(topW / 2, topY); // Up to Top-Right
+            // Top Curve (Right -> Left via Top/Back)
+            ctx.ellipse(0, topY, topW / 2, 1.5, 0, 0, Math.PI, true);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        /**
+         * Ritar Spelare och Målvakt (A1-A3, B1)
+         */
+        function drawPlayer(ctx, x, y, config) {
+            ctx.save();
+            try {
+                ctx.translate(x, y);
+                const scale = 2.0;
+                ctx.scale(scale, scale);
+
+                // SKUGGA
+                if (config.shadow === 'hard') {
+                    ctx.save();
+                    ctx.translate(2, 2);
+                    ctx.fillStyle = "rgba(0,0,0,0.2)";
+                    roundRect(ctx, -4, -6, 8, 12, 1.5); ctx.fill(); // Kropp
+                    ctx.beginPath(); ctx.arc(0, -10, 3.5, 0, Math.PI * 2); ctx.fill(); // Huvud
+                    ctx.fillRect(-6.5, -5, 1.5, 4); ctx.fillRect(5, -5, 1.5, 4); // Armar
+                    ctx.fillRect(-3.5, 6, 3, 10); ctx.fillRect(0.5, 6, 3, 10); // Ben
+                    ctx.restore();
+                }
+
+                // KROPP (Tröja)
+                const bodyY = -6; const bodyW = 8; const bodyH = 12;
+                ctx.fillStyle = config.jersey || COLORS.jersey;
+                roundRect(ctx, -bodyW / 2, bodyY, bodyW, bodyH, 1.5);
+                ctx.fill();
+
+                // SÖMMAR / MÖNSTER
+                if (config.pattern === 'stripe') {
+                    ctx.save(); ctx.clip();
+                    ctx.fillStyle = "rgba(0,0,0,0.15)";
+                    for (let i = -10; i < 10; i += 3) ctx.fillRect(i, -10, 1.5, 25);
+                    ctx.restore();
+                }
+
+                // HUVUD
+                ctx.fillStyle = COLORS.skin;
+                ctx.beginPath(); ctx.arc(0, -10, 3.5, 0, Math.PI * 2); ctx.fill();
+
+                // ARMAR
+                ctx.fillStyle = config.jersey || COLORS.jersey;
+                let armW = 1.5; let armH = 4; const armX = 5; const armY = -5;
+                if (config.arms === 'long') armH = 9;
+
+                // Ärmar (Tröjfärg)
+                ctx.fillRect(-armX - armW, armY, armW, armH);
+                ctx.fillRect(armX, armY, armW, armH);
+
+                // Underarmar (Hud) - om kortärmat
+                if (config.arms !== 'long') {
+                    ctx.fillStyle = COLORS.skin;
+                    ctx.fillRect(-armX - armW, armY + armH, armW, 5);
+                    ctx.fillRect(armX, armY + armH, armW, 5);
+                }
+
+                // HANDSKAR (Målvakt)
+                if (config.gloves) {
+                    ctx.fillStyle = "#ffffff";
+                    const gloveSize = 2.0;
+                    const gY = armY + armH + (config.arms === 'long' ? 0 : 5);
+                    ctx.beginPath(); ctx.arc(-armX - armW / 2, gY, gloveSize, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(armX + armW / 2, gY, gloveSize, 0, Math.PI * 2); ctx.fill();
+                }
+
+                // SHORTS
+                const legY = 6; const shortsH = 5;
+                ctx.fillStyle = COLORS.shorts;
+                ctx.fillRect(-3.5, legY, 3, shortsH);
+                ctx.fillRect(0.5, legY, 3, shortsH);
+
+                // STRUMPOR
+                ctx.fillStyle = config.socks || COLORS.socks;
+                ctx.fillRect(-3.5, legY + shortsH, 3, 5);
+                ctx.fillRect(0.5, legY + shortsH, 3, 5);
+
+                // SKOR
+                ctx.fillStyle = config.shoes || "#1a1a1a";
+                const shoeY = legY + shortsH + 5;
+                // Vänster sko
+                ctx.beginPath(); ctx.moveTo(-3.5, shoeY); ctx.lineTo(-0.5, shoeY); ctx.lineTo(-0.5, shoeY + 2);
+                ctx.quadraticCurveTo(-2, shoeY + 3, -3.5, shoeY + 2); ctx.fill();
+                // Höger sko
+                ctx.beginPath(); ctx.moveTo(0.5, shoeY); ctx.lineTo(3.5, shoeY); ctx.lineTo(3.5, shoeY + 2);
+                ctx.quadraticCurveTo(2, shoeY + 3, 0.5, shoeY + 2); ctx.fill();
+
+                // NUMMER
+                if (config.number) {
+                    ctx.fillStyle = COLORS.number;
+                    const size = 6;
+                    ctx.font = `bold ${size}px Arial`;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    const num = config.jerseyNum !== undefined ? config.jerseyNum : 0;
+                    ctx.fillText(num, 0, -1);
+                }
+            } finally {
+                ctx.restore();
+            }
+        }
+
+        /**
+         * Ritar Tränare (C1, C2)
+         */
+        function drawCoach(ctx, x, y, config) {
+            ctx.save();
+            ctx.translate(x, y);
+            const scale = 2.0;
+            ctx.scale(scale, scale);
+
+            // Kropp (Tröja/Polo)
+            ctx.fillStyle = config.color;
+            roundRect(ctx, -5, -6, 10, 12, 1.5); ctx.fill();
+
+            // Huvud
+            ctx.fillStyle = COLORS.skin;
+            ctx.beginPath(); ctx.arc(0, -10, 3.5, 0, Math.PI * 2); ctx.fill();
+
+            // Byxor
+            ctx.fillStyle = config.pants;
+            ctx.fillRect(-4, 6, 3.5, 10);
+            ctx.fillRect(0.5, 6, 3.5, 10);
+            ctx.restore();
+        }
+
+        /**
+         * Ritar Boll (E1)
+         */
+        function drawBall(ctx, x, y, style) {
+            ctx.save();
+            ctx.translate(x, y);
+            const scale = 3.0;
             ctx.scale(scale, scale);
 
             // Skugga
-            ctx.shadowColor = 'rgba(0,0,0,0.3)';
-            ctx.shadowBlur = 5;
-            ctx.shadowOffsetY = 2;
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.beginPath(); ctx.arc(1, 1, 3.5, 0, Math.PI * 2); ctx.fill();
 
-            // 1. STRUMPOR (Fötter)
-            // Lite isär, pekar framåt (nedåt i bild)
-            ctx.fillStyle = socksColor;
+            // Grundboll
+            ctx.fillStyle = "white";
+            ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
 
-            // Vänster fot
-            ctx.beginPath();
-            ctx.ellipse(-8, 12, 4, 6, 0, 0, Math.PI * 2);
-            ctx.fill();
+            // Outline
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
 
-            // Höger fot
-            ctx.beginPath();
-            ctx.ellipse(8, 12, 4, 6, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 2. SHORTS
-            ctx.fillStyle = shortsColor;
-            // Rita som en rundad rektangel under tröjan
-            ctx.beginPath();
-            ctx.roundRect(-11, 2, 22, 12, 4);
-            ctx.fill();
-
-            // 3. ARMAR (Hud)
-            ctx.fillStyle = skinColor;
-            // Vänster arm
-            ctx.beginPath();
-            ctx.ellipse(-16, -2, 4, 8, Math.PI / 4, 0, Math.PI * 2);
-            ctx.fill();
-            // Höger arm
-            ctx.beginPath();
-            ctx.ellipse(16, -2, 4, 8, -Math.PI / 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 4. TRÖJA (Kropp)
-            ctx.fillStyle = jerseyColor;
-            ctx.beginPath();
-            ctx.arc(0, -2, 14, 0, Math.PI * 2); // Axelparti
-            ctx.fill();
-
-            // 5. HUVUD
-            ctx.fillStyle = skinColor;
-            ctx.beginPath();
-            ctx.arc(0, -2, 7, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 6. NUMMER (På tröjan/ryggen - men vi ser uppifrån, så kanske på huvudet eller axlarna?)
-            // Vanligtvis ser man numret på ryggen om de lutar, men i ren top-down ser man bara huvud.
-            // Vi lägger numret på tröjan (axlarna) eller "svävande" över.
-            // För tydlighetens skull, låt oss lägga det på tröjan (kroppen) om det får plats, annars skippa.
-            // Här ritar vi det vitt på tröjan för kontrast.
-            ctx.shadowColor = 'transparent'; // Ingen skugga på text
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 10px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            // ctx.fillText(number, 0, -2); // Numret syns dåligt under huvudet.
-
-            // Alternativ: Rita numret bredvid eller på huvudet (som en hjälm? nej).
-            // Vi skippar nummer i den grafiska vyn för nu, eller ritar det väldigt litet på shortsen?
-            // Låt oss rita det på shortsen!
-            ctx.fillStyle = '#333';
-            ctx.font = 'bold 8px Arial';
-            ctx.fillText(number, 0, 8); // På shortsen
-
-            ctx.restore();
-
-            // MARKERING
-            if (isSelected) {
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.scale(scale, scale);
-
-                ctx.strokeStyle = '#00ff00';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 4]);
-
-                ctx.beginPath();
-                ctx.arc(0, 0, 25, 0, Math.PI * 2);
-                ctx.stroke();
-
-                ctx.restore();
+            // Realistic shading overlay
+            if (style === 'realistic') {
+                const grad = ctx.createRadialGradient(-1, -1, 0, 0, 0, 4);
+                grad.addColorStop(0, "rgba(255,255,255,0.8)");
+                grad.addColorStop(1, "rgba(0,0,0,0.1)");
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
             }
+            ctx.restore();
+        }
+
+        /**
+         * Ritar Mål (D4)
+         */
+        function drawGoal(ctx, x, y, config) {
+            ctx.save();
+            ctx.translate(x, y);
+            const scale = 2.0;
+            ctx.scale(scale, scale);
+
+            const w = 30; const h_top = 10; const depth = 10;
+            const topY = -h_top; const bottomY = 0; const backOffset = -depth;
+            const bx1 = -w / 2; const bx2 = w / 2;
+            const by1 = topY + backOffset; const by2 = bottomY + backOffset;
+
+            // Nät (Bakre del)
+            ctx.strokeStyle = `rgba(255,255,255,${config.netAlpha || 0.2})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Ram bak
+            ctx.moveTo(-w / 2, topY); ctx.lineTo(bx1, by1); ctx.lineTo(bx2, by1); ctx.lineTo(w / 2, topY);
+            ctx.moveTo(-w / 2, topY); ctx.lineTo(bx1, by1); ctx.lineTo(bx1, by2); ctx.lineTo(-w / 2, bottomY);
+            ctx.moveTo(w / 2, topY); ctx.lineTo(bx2, by1); ctx.lineTo(bx2, by2); ctx.lineTo(w / 2, bottomY);
+            ctx.stroke();
+
+            // Nätmönster
+            if (config.net === 'thin') {
+                ctx.lineWidth = 0.5;
+                ctx.beginPath();
+                // Vertikala trådar
+                for (let i = bx1; i <= bx2; i += 4) { ctx.moveTo(i, by1); ctx.lineTo(i, by2); }
+                ctx.stroke();
+                ctx.beginPath();
+                // Horisontella trådar
+                for (let i = by1; i <= by2; i += 4) { ctx.moveTo(bx1, i); ctx.lineTo(bx2, i); }
+                ctx.stroke();
+            }
+
+            // Främre Ram (Stolpar och ribba)
+            ctx.strokeStyle = "white";
+            ctx.lineCap = "butt";
+            ctx.lineJoin = config.join || 'round';
+            ctx.lineWidth = config.thickness || 2.5;
+            ctx.beginPath();
+            ctx.moveTo(-w / 2, bottomY);
+            ctx.lineTo(-w / 2, topY);
+            ctx.lineTo(w / 2, topY);
+            ctx.lineTo(w / 2, bottomY);
+            ctx.stroke();
+            ctx.restore();
         }
 
         render();
